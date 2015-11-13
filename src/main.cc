@@ -17,18 +17,67 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include <iostream>
+#include <fstream>
+#include <boost/algorithm/string.hpp>
+
+// A global variable (ack!) which we use for benchmarks..
 
 #include "linked_list.h"
 
 using namespace std;
 
+
 int main()
 {
-	List<int> l (4);
-	l.cons(3)->cons(2)->cons(1);
+
+	// Parse words from a file...
 	
-	cout << "Hello world! " << l.pp() << endl;
+	ifstream *f;
+	f = new ifstream();
+	f->open("pg1342.txt");
+
+	string word;
+
+	List<string> *l = new Empty<string>();
+	List<string> *m;
+
+	int i = 0;
+
+	while (f->good()) {
+		
+		*f >> word;
+		boost::algorithm::to_lower(word);
+
+		m = l->find(word);
+		if (m->empty()) { 
+			// cout << "Adding: " << word << endl;
+			l = l->cons(word);
+		}
+
+		i++;
+	}
+
+	cout << "Total words: " << i << "; list size (unique words): " 
+ 	     << l->size() << endl;
+	cout << "Steps: " << List<string>::global_linked_list_stepcount << endl;
+
+	/*
+	List<int> *l;
+	l = new Cons<int> (4, new Cons<int>(5, new Cons<int>(6, new Empty<int>())));
+	List<int> *k;
+	k = l->cons(3)->cons(2)->cons(1);
+
+	List <int> *m;
+	m = k->find(9); 
+	
+	if (m->empty())
+		cout << "Not found: " << m->pp() << endl;
+	else
+		cout << "Found: " << m->pp() << endl;
+	*/
+
 	return 0;
 }
 

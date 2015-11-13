@@ -1,86 +1,126 @@
 #ifndef SKIENA_3_16_LINKED_LIST
 #define SKIENA_3_16_LINKED_LIST
 
+/**
+ * Linked list template, inspired a little from Haskell's list...
+ * There is an empty list object and a Cons object which here is just called
+ * List. We can determine at runtime whether the next element is empty or not.
+ */
+
 #include <string.h>
-#include <typeinfo>
-#include <iostream>
 #include <boost/lexical_cast.hpp>
 
 using namespace std;
 
+
 template <class T>
-class EmptyList {
-	public: 
-		EmptyList<T> ();
-		string pp(); // Pretty Print
+class List {
+	public:
+		static  int global_linked_list_stepcount;
+		virtual string  pp    ()    = 0; // Pretty Print
+		virtual List<T> *find (T x) = 0; 
+		virtual List<T> *cons (T x) = 0;
+		virtual bool    empty ()    = 0;
+		virtual int	size  ()    = 0;
 };
 
 template <class T>
-class List : EmptyList<T> {
+int List<T>::global_linked_list_stepcount = 0;
+
+template <class T>
+class Cons: public List<T> {
 	public: 
-		List<T> (T a);
-		List<T> (T a, EmptyList<T> *right);
-		List<T> next ();
-		bool has_next ();
-		List<T> *cons (T next);
+		Cons<T> (T x, List<T> *xs);
+		Cons<T> (T x);
+		List<T> *find (T x);
+		List<T> *cons (T x);
+		// List<T> *concat (Cons<T> xs);
 		T value ();
-		string pp(); // Pretty Print
+		string pp (); // Pretty Print
+		bool empty();
+		int  size();
 	private:
-		EmptyList<T> *nx;
-		T data;
+		List<T> *xs;
+		T x;
+};
+
+template <class T>
+class Empty : public List<T> {
+	public: 
+		Empty <T> ();
+		string pp(); // Pretty Print
+		List<T> *find (T x);
+		List<T> *cons (T x);
+		bool empty();
+		int  size();
 };
 
 // Implementation:
 
 template <class T>
-EmptyList<T>::EmptyList() { }
+Empty<T>::Empty() { }
 
 template <class T>
-string EmptyList<T>::pp() { return "[]"; }
+string Empty<T>::pp() { return "[]"; }
 
 
 template <class T>
-List<T>::List(T a) {
-	this->data = a;
+bool Empty<T>::empty() { return true; }
 
-	// Initialize next with the empty list so that we avoid null values...
-	EmptyList<T> *e = new EmptyList<T>();
-	this->nx = e;
+template <class T>
+List<T> *Empty<T>::cons (T x) {
+	List<T>::global_linked_list_stepcount++;
+	return new Cons<T>(x, this);
 }
 
 template <class T>
-List<T>::List(T a, EmptyList<T> *nx) {
-	this->data = a;
-	this->nx = nx;
+Cons<T>::Cons(T x, List<T> *xs) {
+	List<T>::global_linked_list_stepcount++;
+	this->x  = x;
+	this->xs = xs;
 }
 
 template <class T>
-List<T> List<T>::next() {
-	return *(this->nx);
+List<T> *Cons<T>::cons (T x) {
+	List<T>::global_linked_list_stepcount++;
+	return new Cons<T>(x, this);
 }
 
 template <class T>
-bool List<T>::has_next() {
-	// this->nx is not an EmptyList...
-	return typeid(this->nx) != typeid(EmptyList<T>);
+bool Cons<T>::empty () {
+	List<T>::global_linked_list_stepcount++;
+	return false;
 }
 
+// TODO: Consider adding a 'Maybe' type?
 
 template <class T>
-List<T> *List<T>::cons (T x) {
-	this->nx = new List<T>(x, this->nx);
-	return this;
+List<T> *Empty<T>::find (T x) { return this; }
+template <class T>
+List<T> *Cons<T>:: find (T x) {
+	List<T>::global_linked_list_stepcount++;
+	if (this->x == x) return this;
+	// We know that xs is a *List<T> and that this is safe.
+	return this->xs->find (x);
 }
 
 template <class T>
-T List<T>::value() {
-	return this->data;
+int Empty<T>::size () { return 0; }
+template <class T>
+int Cons<T> ::size () {
+	List<T>::global_linked_list_stepcount++;
+	return 1 + this->xs->size(); 
 }
 
 template <class T>
-string List<T>::pp() {
-	return (boost::lexical_cast<std::string>(this->data)) + ":" 
-	     + this->nx->pp();
+T Cons<T>::value() {
+	return this->x;
+}
+
+template <class T>
+string Cons<T>::pp() {
+	return (boost::lexical_cast<std::string>(this->x)) + ":" 
+	     + this->xs->pp();
 }
 
 #endif
