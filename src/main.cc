@@ -22,12 +22,14 @@
 #include <fstream>
 #include <boost/algorithm/string.hpp>
 
-// A global variable (ack!) which we use for benchmarks..
-
 #include "linked_list.h"
+#include "bin_tree.h"
 
 using namespace std;
 
+int not_isalnum (int x) {
+	return !std::isalnum (x);
+}
 
 int main()
 {
@@ -43,40 +45,41 @@ int main()
 	List<string> *l = new Empty<string>();
 	List<string> *m;
 
+	BinTree<string> *b = new Leaf<string>();
+	BinTree<string> *node;
+
 	int i = 0;
 
-	while (f->good()) {
+	while (f->good() && (i < 1000)) {
 		
 		*f >> word;
 		boost::algorithm::to_lower(word);
+		word.erase(
+		  std::remove_if ( word.begin(), word.end()
+                                 , (int(*)(int)) not_isalnum ), word.end());
 
 		m = l->find(word);
-		if (m->empty()) { 
-			// cout << "Adding: " << word << endl;
+		if (m->empty()) {
 			l = l->cons(word);
+		}
+
+		node = b->find(word);
+		if (m->empty()) {
+			b = b->insert(word);
 		}
 
 		i++;
 	}
 
+	cout << b->pp() << endl;
+
 	cout << "Total words: " << i << "; list size (unique words): " 
- 	     << l->size() << endl;
-	cout << "Steps: " << List<string>::global_linked_list_stepcount << endl;
-
-	/*
-	List<int> *l;
-	l = new Cons<int> (4, new Cons<int>(5, new Cons<int>(6, new Empty<int>())));
-	List<int> *k;
-	k = l->cons(3)->cons(2)->cons(1);
-
-	List <int> *m;
-	m = k->find(9); 
-	
-	if (m->empty())
-		cout << "Not found: " << m->pp() << endl;
-	else
-		cout << "Found: " << m->pp() << endl;
-	*/
+ 	     << l->size() 
+	     << "; tree size (unique words): "
+	     << b->size()
+	     << endl;
+	cout << "List steps: " << List<string>::global_linked_list_stepcount << endl;
+	cout << "BinTree steps: " << BinTree<string>::global_binary_tree_stepcount << endl;
 
 	return 0;
 }

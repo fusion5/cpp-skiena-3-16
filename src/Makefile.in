@@ -102,7 +102,8 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_skiena_3_16_OBJECTS = skiena_3_16-main.$(OBJEXT) \
-	skiena_3_16-linked_list.$(OBJEXT)
+	skiena_3_16-linked_list.$(OBJEXT) \
+	skiena_3_16-bin_tree.$(OBJEXT)
 skiena_3_16_OBJECTS = $(am_skiena_3_16_OBJECTS)
 skiena_3_16_DEPENDENCIES =
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -323,7 +324,9 @@ AM_CFLAGS = \
 skiena_3_16_SOURCES = \
 	main.cc \
 	linked_list.cxx \
-	linked_list.h
+	linked_list.h \
+	bin_tree.cxx \
+	bin_tree.h
 
 skiena_3_16_CXXFLAGS = --std=c++11 
 skiena_3_16_CFLAGS = --std=c++11 
@@ -423,6 +426,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/skiena_3_16-bin_tree.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/skiena_3_16-linked_list.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/skiena_3_16-main.Po@am__quote@
 
@@ -474,6 +478,20 @@ skiena_3_16-linked_list.obj: linked_list.cxx
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='linked_list.cxx' object='skiena_3_16-linked_list.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(skiena_3_16_CPPFLAGS) $(CPPFLAGS) $(skiena_3_16_CXXFLAGS) $(CXXFLAGS) -c -o skiena_3_16-linked_list.obj `if test -f 'linked_list.cxx'; then $(CYGPATH_W) 'linked_list.cxx'; else $(CYGPATH_W) '$(srcdir)/linked_list.cxx'; fi`
+
+skiena_3_16-bin_tree.o: bin_tree.cxx
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(skiena_3_16_CPPFLAGS) $(CPPFLAGS) $(skiena_3_16_CXXFLAGS) $(CXXFLAGS) -MT skiena_3_16-bin_tree.o -MD -MP -MF $(DEPDIR)/skiena_3_16-bin_tree.Tpo -c -o skiena_3_16-bin_tree.o `test -f 'bin_tree.cxx' || echo '$(srcdir)/'`bin_tree.cxx
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/skiena_3_16-bin_tree.Tpo $(DEPDIR)/skiena_3_16-bin_tree.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='bin_tree.cxx' object='skiena_3_16-bin_tree.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(skiena_3_16_CPPFLAGS) $(CPPFLAGS) $(skiena_3_16_CXXFLAGS) $(CXXFLAGS) -c -o skiena_3_16-bin_tree.o `test -f 'bin_tree.cxx' || echo '$(srcdir)/'`bin_tree.cxx
+
+skiena_3_16-bin_tree.obj: bin_tree.cxx
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(skiena_3_16_CPPFLAGS) $(CPPFLAGS) $(skiena_3_16_CXXFLAGS) $(CXXFLAGS) -MT skiena_3_16-bin_tree.obj -MD -MP -MF $(DEPDIR)/skiena_3_16-bin_tree.Tpo -c -o skiena_3_16-bin_tree.obj `if test -f 'bin_tree.cxx'; then $(CYGPATH_W) 'bin_tree.cxx'; else $(CYGPATH_W) '$(srcdir)/bin_tree.cxx'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/skiena_3_16-bin_tree.Tpo $(DEPDIR)/skiena_3_16-bin_tree.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='bin_tree.cxx' object='skiena_3_16-bin_tree.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(skiena_3_16_CPPFLAGS) $(CPPFLAGS) $(skiena_3_16_CXXFLAGS) $(CXXFLAGS) -c -o skiena_3_16-bin_tree.obj `if test -f 'bin_tree.cxx'; then $(CYGPATH_W) 'bin_tree.cxx'; else $(CYGPATH_W) '$(srcdir)/bin_tree.cxx'; fi`
 
 .cxx.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

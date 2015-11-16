@@ -16,7 +16,9 @@ bin_PROGRAMS = skiena_3_16
 skiena_3_16_SOURCES = \
 	main.cc \
 	linked_list.cxx \
-	linked_list.h
+	linked_list.h \
+	bin_tree.cxx \
+	bin_tree.h
 
 skiena_3_16_CXXFLAGS = --std=c++11 
 

@@ -12,16 +12,15 @@
 
 using namespace std;
 
-
 template <class T>
 class List {
 	public:
 		static  int global_linked_list_stepcount;
-		virtual string  pp    ()    = 0; // Pretty Print
 		virtual List<T> *find (T x) = 0; 
 		virtual List<T> *cons (T x) = 0;
 		virtual bool    empty ()    = 0;
-		virtual int	size  ()    = 0;
+		virtual int     size  ()    = 0;
+		virtual string  pp    ()    = 0; // Pretty Print
 };
 
 template <class T>
@@ -34,11 +33,10 @@ class Cons: public List<T> {
 		Cons<T> (T x);
 		List<T> *find (T x);
 		List<T> *cons (T x);
-		// List<T> *concat (Cons<T> xs);
 		T value ();
-		string pp (); // Pretty Print
-		bool empty();
-		int  size();
+		bool    empty();
+		int     size();
+		string  pp (); // Pretty Print
 	private:
 		List<T> *xs;
 		T x;
@@ -48,24 +46,17 @@ template <class T>
 class Empty : public List<T> {
 	public: 
 		Empty <T> ();
-		string pp(); // Pretty Print
 		List<T> *find (T x);
 		List<T> *cons (T x);
-		bool empty();
-		int  size();
+		bool    empty();
+		int     size();
+		string  pp(); // Pretty Print
 };
 
 // Implementation:
 
 template <class T>
 Empty<T>::Empty() { }
-
-template <class T>
-string Empty<T>::pp() { return "[]"; }
-
-
-template <class T>
-bool Empty<T>::empty() { return true; }
 
 template <class T>
 List<T> *Empty<T>::cons (T x) {
@@ -87,12 +78,11 @@ List<T> *Cons<T>::cons (T x) {
 }
 
 template <class T>
-bool Cons<T>::empty () {
-	List<T>::global_linked_list_stepcount++;
-	return false;
-}
+bool Cons<T>::empty () { return false; }
+template <class T>
+bool Empty<T>::empty() { return true; }
 
-// TODO: Consider adding a 'Maybe' type?
+// TODO: Consider adding a 'Maybe' type and make the return type Maybe T?
 
 template <class T>
 List<T> *Empty<T>::find (T x) { return this; }
@@ -113,14 +103,18 @@ int Cons<T> ::size () {
 }
 
 template <class T>
-T Cons<T>::value() {
-	return this->x;
-}
-
-template <class T>
 string Cons<T>::pp() {
 	return (boost::lexical_cast<std::string>(this->x)) + ":" 
 	     + this->xs->pp();
 }
+template <class T>
+string Empty<T>::pp() { return "[]"; }
+
+template <class T>
+T Cons<T>::value() {
+	return this->x;
+}
+// No implementation for Empty::value()
+
 
 #endif
