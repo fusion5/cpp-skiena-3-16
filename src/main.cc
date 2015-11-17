@@ -24,6 +24,7 @@
 
 #include "linked_list.h"
 #include "bin_tree.h"
+#include "balanced_23_tree.h"
 
 using namespace std;
 
@@ -35,6 +36,10 @@ int main()
 {
 
 	// Parse words from a file...
+	// To implement also: 
+	// - A trie.
+	// - 2-3 trees
+	// - AVL tree
 	
 	ifstream *f;
 	f = new ifstream();
@@ -48,9 +53,12 @@ int main()
 	BinTree<string> *b = new Leaf<string>();
 	BinTree<string> *node;
 
+	Balanced23Tree<string> *bal_tree = new BalancedEmpty<string>();
+	Balanced23Tree<string> *bal_node;
+
 	int i = 0;
 
-	while (f->good() && (i < 1000)) {
+	while (f->good() && (i < 100)) {
 		
 		*f >> word;
 		boost::algorithm::to_lower(word);
@@ -59,27 +67,35 @@ int main()
                                  , (int(*)(int)) not_isalnum ), word.end());
 
 		m = l->find(word);
-		if (m->empty()) {
-			l = l->cons(word);
-		}
+		if (m->empty()) l = l->cons(word);
 
 		node = b->find(word);
-		if (m->empty()) {
-			b = b->insert(word);
-		}
+		if (m->empty()) b = b->insert(word);
+
+		bal_node = bal_tree->find(word);
+		if (bal_node->empty())
+			bal_tree = balanced_23_tree_insert<string> (
+				bal_tree, word);
 
 		i++;
 	}
 
-	cout << b->pp() << endl;
+	cout << b->pp()        << endl;
+	cout << bal_tree->pp() << endl;
 
 	cout << "Total words: " << i << "; list size (unique words): " 
  	     << l->size() 
 	     << "; tree size (unique words): "
 	     << b->size()
+	     << "; balanced 2-3 tree size (unique words): "
+	     << bal_tree->size()
 	     << endl;
-	cout << "List steps: " << List<string>::global_linked_list_stepcount << endl;
-	cout << "BinTree steps: " << BinTree<string>::global_binary_tree_stepcount << endl;
+
+	cout << "List steps: " << 
+		List<string>::global_linked_list_stepcount << endl;
+
+	cout << "BinTree steps: " << 
+		BinTree<string>::global_binary_tree_stepcount << endl;
 
 	return 0;
 }
