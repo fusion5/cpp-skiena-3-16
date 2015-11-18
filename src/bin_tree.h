@@ -9,7 +9,7 @@ using namespace std;
 template <class T>
 class BinTree {
 	public:
-		static int global_binary_tree_stepcount;
+		static int steps;
 		virtual BinTree<T> *find   (T x) = 0;
 		virtual BinTree<T> *insert (T x) = 0;
 		virtual int      size   ()    	 = 0;
@@ -18,7 +18,7 @@ class BinTree {
 };
 
 template <class T>
-int BinTree<T>::global_binary_tree_stepcount = 0;
+int BinTree<T>::steps= 0;
 
 template <class T>
 class Node: public BinTree<T> {
@@ -66,14 +66,14 @@ template <class T>
 int Leaf<T>::size() { return 0; }
 template <class T>
 int Node<T>::size() { 
-	BinTree<T>::global_binary_tree_stepcount++;
+	BinTree<T>::steps ++;
 	return 1 + this->lt->size() + this->rt->size(); }
 
 // Return a reference to the updated tree
 template <class T>
 BinTree<T> *Node<T>::insert (T x) {
 
-	BinTree<T>::global_binary_tree_stepcount++;
+	BinTree<T>::steps ++;
 	BinTree<T> *old;
 
 	if (x > this->x) {
@@ -92,13 +92,13 @@ BinTree<T> *Node<T>::insert (T x) {
 }
 template <class T>
 BinTree<T> *Leaf<T>::insert (T x) {
-	BinTree<T>::global_binary_tree_stepcount++;
+	BinTree<T>::steps ++;
 	return new Node<T> (x, new Leaf<T>(), new Leaf<T>());
 }
 
 template <class T>
 BinTree<T> *Node<T>::find (T x) {
-	BinTree<T>::global_binary_tree_stepcount++;
+	BinTree<T>::steps ++;
 	if (this->x == x) return this;
 	if (x > this->x)
 		return this->rt->find (x);
@@ -108,7 +108,7 @@ BinTree<T> *Node<T>::find (T x) {
 
 template <class T>
 BinTree<T> *Leaf<T>::find (T x) {
-	BinTree<T>::global_binary_tree_stepcount++;
+	BinTree<T>::steps ++;
 	// If we reached this, it means we haven't found it
 	return this;
 }

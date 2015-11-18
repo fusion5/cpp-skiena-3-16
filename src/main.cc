@@ -25,6 +25,7 @@
 #include "linked_list.h"
 #include "bin_tree.h"
 #include "balanced_23_tree.h"
+#include "balanced_avl_tree.h"
 
 using namespace std;
 
@@ -38,8 +39,8 @@ int main()
 	// Parse words from a file...
 	// To implement also: 
 	// - A trie.
-	// - 2-3 trees
 	// - AVL tree
+	// - Red-black tree
 	
 	ifstream *f;
 	f = new ifstream();
@@ -56,9 +57,12 @@ int main()
 	Balanced23Tree<string> *bal_tree = new BalancedEmpty<string>();
 	Balanced23Tree<string> *bal_node;
 
+	AVLTree<string> *avl_tree = new AVLEmpty<string>();
+	AVLTree<string> *avl_node;
+
 	int i = 0;
 
-	while (f->good() && (i < 100)) {
+	while (f->good() && (i < 10000)) {
 		
 		*f >> word;
 		boost::algorithm::to_lower(word);
@@ -66,22 +70,48 @@ int main()
 		  std::remove_if ( word.begin(), word.end()
                                  , (int(*)(int)) not_isalnum ), word.end());
 
+		bool test;
+
 		m = l->find(word);
-		if (m->empty()) l = l->cons(word);
+		test = m->empty();
+
+		if (m->empty()) l = l->insert(word);
 
 		node = b->find(word);
-		if (m->empty()) b = b->insert(word);
+		if (node->empty() != test) {
+			cout << "Could not find in bin. tree the word: " 
+			     << word;
+			return 0;
+		}
+		if (node->empty()) b = b->insert(word);
 
 		bal_node = bal_tree->find(word);
+		if (bal_node->empty() != test) {
+			cout << bal_tree->pp() << endl;
+			cout << "Could not find in bal. tree the word: " 
+			     << word << endl;
+			return 0;
+		}
 		if (bal_node->empty())
 			bal_tree = balanced_23_tree_insert<string> (
 				bal_tree, word);
+
+		avl_tree->insert(word);
 
 		i++;
 	}
 
 	cout << b->pp()        << endl;
 	cout << bal_tree->pp() << endl;
+
+	cout << "List steps: " << 
+		List<string>::steps << endl;
+
+	cout << "BinTree steps: " << 
+		BinTree<string>::steps << endl;
+
+	cout << "Balanced 2-3 Tree steps: " << 
+		Balanced23Tree<string>::steps << endl;
 
 	cout << "Total words: " << i << "; list size (unique words): " 
  	     << l->size() 
@@ -91,11 +121,6 @@ int main()
 	     << bal_tree->size()
 	     << endl;
 
-	cout << "List steps: " << 
-		List<string>::global_linked_list_stepcount << endl;
-
-	cout << "BinTree steps: " << 
-		BinTree<string>::global_binary_tree_stepcount << endl;
 
 	return 0;
 }

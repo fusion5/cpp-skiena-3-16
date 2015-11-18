@@ -13,18 +13,21 @@
 using namespace std;
 
 template <class T>
+class List;
+
+template <class T>
 class List {
 	public:
-		static  int global_linked_list_stepcount;
-		virtual List<T> *find (T x) = 0; 
-		virtual List<T> *cons (T x) = 0;
-		virtual bool    empty ()    = 0;
-		virtual int     size  ()    = 0;
-		virtual string  pp    ()    = 0; // Pretty Print
+		static  int steps;
+	   	virtual List<T> *find   (T x) = 0; 
+		virtual List<T> *insert (T x) = 0;
+		virtual bool    empty   ()    = 0;
+		virtual int     size    ()    = 0;
+		virtual string  pp      ()    = 0; // Pretty Print
 };
 
 template <class T>
-int List<T>::global_linked_list_stepcount = 0;
+int List<T>::steps = 0;
 
 template <class T>
 class Cons: public List<T> {
@@ -32,7 +35,7 @@ class Cons: public List<T> {
 		Cons<T> (T x, List<T> *xs);
 		Cons<T> (T x);
 		List<T> *find (T x);
-		List<T> *cons (T x);
+		List<T> *insert (T x);
 		T value ();
 		bool    empty();
 		int     size();
@@ -47,7 +50,7 @@ class Empty : public List<T> {
 	public: 
 		Empty <T> ();
 		List<T> *find (T x);
-		List<T> *cons (T x);
+		List<T> *insert (T x);
 		bool    empty();
 		int     size();
 		string  pp(); // Pretty Print
@@ -59,21 +62,21 @@ template <class T>
 Empty<T>::Empty() { }
 
 template <class T>
-List<T> *Empty<T>::cons (T x) {
-	List<T>::global_linked_list_stepcount++;
+List<T> *Empty<T>::insert (T x) {
+	List<T>::steps++;
 	return new Cons<T>(x, this);
 }
 
 template <class T>
 Cons<T>::Cons(T x, List<T> *xs) {
-	List<T>::global_linked_list_stepcount++;
+	List<T>::steps++;
 	this->x  = x;
 	this->xs = xs;
 }
 
 template <class T>
-List<T> *Cons<T>::cons (T x) {
-	List<T>::global_linked_list_stepcount++;
+List<T> *Cons<T>::insert (T x) {
+	List<T>::steps++;
 	return new Cons<T>(x, this);
 }
 
@@ -88,7 +91,7 @@ template <class T>
 List<T> *Empty<T>::find (T x) { return this; }
 template <class T>
 List<T> *Cons<T>:: find (T x) {
-	List<T>::global_linked_list_stepcount++;
+	List<T>::steps++;
 	if (this->x == x) return this;
 	// We know that xs is a *List<T> and that this is safe.
 	return this->xs->find (x);
@@ -98,7 +101,7 @@ template <class T>
 int Empty<T>::size () { return 0; }
 template <class T>
 int Cons<T> ::size () {
-	List<T>::global_linked_list_stepcount++;
+	List<T>::steps++;
 	return 1 + this->xs->size(); 
 }
 

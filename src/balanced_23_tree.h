@@ -8,6 +8,9 @@
  * When we insert into a 2 node it becomes a 3 node
  * When we insert into a 3 node it splits into 2 2-nodes, which we 
  * re-insert into the parent
+ *
+ * I think it needs better memory management to deallocate nodes when it
+ * splits a node into 2...
  */
 
 #include <string.h>
@@ -39,7 +42,12 @@ class Balanced23Tree {
 		virtual bool		   leaf   ()    = 0;
 		virtual string 		   pp     ()    = 0;
 		virtual int 		   size   ()    = 0;
+
+		static int steps;
 };
+
+template <class T>
+int Balanced23Tree<T>::steps = 0;
 
 template <class T>
 class BalancedNode2: public Balanced23Tree<T> {
@@ -56,8 +64,8 @@ class BalancedNode2: public Balanced23Tree<T> {
 	private:
 		T leftMax;
 		T middleMax;
-		Balanced23Tree<T> *lt;
-		Balanced23Tree<T> *mt;
+		Balanced23Tree<T> *lt; // Left sub-tree
+		Balanced23Tree<T> *mt; // Middle sub-tree
 };
 
 template <class T>
@@ -76,9 +84,9 @@ class BalancedNode3: public Balanced23Tree<T> {
 	private:
 		T leftMax;
 		T middleMax;
-		Balanced23Tree<T> *lt;
-		Balanced23Tree<T> *mt;
-		Balanced23Tree<T> *rt;
+		Balanced23Tree<T> *lt; // Left sub-tree
+		Balanced23Tree<T> *mt; // Middle sub-tree
+		Balanced23Tree<T> *rt; // Right sub-tree
 };
 
 template <class T>
@@ -109,7 +117,8 @@ class BalancedEmpty: public Balanced23Tree<T> {
 		int		   size ();
 };
 
-// Function that allows us to insert properly...
+// vanilla function that allows us to insert properly (it handles the tuple 
+// return value properly).
 template <class T>
 Balanced23Tree<T> *balanced_23_tree_insert (Balanced23Tree<T> *t, T x) {
 	
@@ -142,7 +151,7 @@ BalancedNode3<T>::BalancedNode3 ( Balanced23Tree<T> *lt
 				, Balanced23Tree<T> *mt
 				, Balanced23Tree<T> *rt) {
 	this->leftMax   = lt->max();
-	this->middleMax = rt->max();
+	this->middleMax = mt->max();
 	this->lt = lt;
 	this->mt = mt;
 	this->rt = rt;
@@ -182,19 +191,25 @@ template <class T> bool BalancedNode3<T>::leaf() { return false; }
 
 /* find */
 template <class T>
-Balanced23Tree<T> *BalancedEmpty<T>::find (T x) { return this; }
+Balanced23Tree<T> *BalancedEmpty<T>::find (T x) { 
+	Balanced23Tree<T>::steps++;
+	return this; 
+}
 template <class T>
 Balanced23Tree<T> *BalancedLeaf<T>::find (T x) {
+	Balanced23Tree<T>::steps++;
 	if (this->x == x) return this;
 	return new BalancedEmpty<T>();
 }
 template <class T>
 Balanced23Tree<T> *BalancedNode2<T>::find (T x) {
+	Balanced23Tree<T>::steps++;
 	if (x <= this->leftMax) return this->lt->find (x);
 	else 			return this->mt->find (x);
 }
 template <class T>
 Balanced23Tree<T> *BalancedNode3<T>::find (T x) {
+	Balanced23Tree<T>::steps++;
 	if (x <= this->leftMax)   return this->lt->find (x);
 	if (x <= this->middleMax) return this->mt->find (x);
 	else			  return this->rt->find (x);
@@ -202,47 +217,65 @@ Balanced23Tree<T> *BalancedNode3<T>::find (T x) {
 
 /* max */
 template <class T>
-T BalancedNode2<T>::max() { return this->mt->max(); }
+T BalancedNode2<T>::max() { 
+	Balanced23Tree<T>::steps++;
+	// return this->mt->max(); 
+	return this->middleMax;
+}
 template <class T>
-T BalancedNode3<T>::max() { return this->rt->max(); }
+T BalancedNode3<T>::max() { 
+	Balanced23Tree<T>::steps++;
+	return this->rt->max(); }
 template <class T>
-T BalancedLeaf<T>::max()  { return this->x; }
+T BalancedLeaf<T>::max()  { 
+	Balanced23Tree<T>::steps++;
+	return this->x; }
 template <class T>
 T BalancedEmpty<T>::max() { throw "Cannot call max here"; }
 
 /* insert */
 template <class T>
 insert_ret_type<T> BalancedEmpty<T>::insert (T x) {
+	Balanced23Tree<T>::steps++;
 	return make_tuple (new BalancedLeaf<T> (x), new BalancedEmpty<T>(), x);
 }
 template <class T>
 insert_ret_type<T> BalancedLeaf<T>::insert (T x) {
+	Balanced23Tree<T>::steps++;
+
+	// Inserting an already existing value does nothing
+	if (this->x == x) return make_tuple (this, new BalancedEmpty<T>, x); 
+
 	BalancedLeaf<T> *new_leaf = new BalancedLeaf<T> (x);
-	return 	make_tuple (
-		  new BalancedNode2<T> (this, new_leaf)
-		, new BalancedEmpty<T> ()
-		, x );
+	if (this->x < x)
+		return make_tuple ( new BalancedNode2<T> (this, new_leaf)
+				  , new BalancedEmpty<T> ()
+				  , x );
+	else // this->x > x
+		return make_tuple ( new BalancedNode2<T> (new_leaf, this)
+				  , new BalancedEmpty<T> ()
+				  , this->x );
 }
 template <class T>
 insert_ret_type<T> BalancedNode2<T>::insert (T x) {
 
+	Balanced23Tree<T>::steps++;
 	if (this->lt->leaf() && this->mt->leaf()) {
 		// I become a 3-node, and add a new leaf where appropriate.
 		Balanced23Tree<T> *leaf = new BalancedLeaf <T>(x);
-		Balanced23Tree<T> *n    = new BalancedEmpty<T>();
-		Balanced23Tree<T> *m;
+		Balanced23Tree<T> *m    = this;
 		T max = this->middleMax;
 
-		if (x < this->leftMax) {
+		if (x < this->leftMax)
 			m = new BalancedNode3<T> (leaf, this->lt, this->mt);
-		} else if (x < this->middleMax) {
+		else if ((this->leftMax < x) && (x < this->middleMax))
 			m = new BalancedNode3<T> (this->lt, leaf, this->mt);
-		} else {
+		else if (this->middleMax < x) {
 			m = new BalancedNode3<T> (this->lt, this->mt, leaf);
-			max = x; // x is the new maximum bc x >= middleMax
+			max = x;
 		}
 
-		return make_tuple (m, n, max);
+		return make_tuple (m, new BalancedEmpty<T>(), max);
 	}
 
 	Balanced23Tree<T> *li; // Left insert result
@@ -250,7 +283,7 @@ insert_ret_type<T> BalancedNode2<T>::insert (T x) {
 			       // value)
 	T		  max; // The maximum of both li and ri
 
-	if (x < this->leftMax) {
+	if (x <= this->leftMax) {
 		tie (li, ri, max) = this->lt->insert (x);
 		if (ri->empty()) {
 			// I remain a 2-node
@@ -286,28 +319,34 @@ insert_ret_type<T> BalancedNode2<T>::insert (T x) {
 template <class T>
 insert_ret_type<T> BalancedNode3<T>::insert(T x) {
 
+	Balanced23Tree<T>::steps++;
 	if (this->lt->leaf() && this->mt->leaf() && this->rt->leaf()) {
 		// We are the parent of a new node!
 		// But we cannot have 4 children so we have to split
 		// recursively upwards...
-		Balanced23Tree<T> *m;
+		Balanced23Tree<T> *m = this;
 		Balanced23Tree<T> *n;
+
 		T max = this->rt->max();
 		Balanced23Tree<T> *leaf = new BalancedLeaf<T>(x);
 
-		if (x < this->leftMax) {
+		if (x < this->lt->max()) {
 			m = new BalancedNode2<T> (leaf, this->lt);
 			n = new BalancedNode2<T> (this->mt, this->rt);
-		} else if (x < this->middleMax) {
+		} else if ((this->lt->max() < x) && (x < this->mt->max())) {
 			m = new BalancedNode2<T> (this->lt, leaf);
 			n = new BalancedNode2<T> (this->mt, this->rt);
-		} else if (x < max) { 
+		} else if ((this->mt->max() < x) && (x < this->rt->max())) {
 			m = new BalancedNode2<T> (this->lt, this->mt);
 			n = new BalancedNode2<T> (leaf, this->rt);
-		} else {
+		} else if (this->rt->max() < x) {
 			m = new BalancedNode2<T> (this->lt, this->mt);
 			n = new BalancedNode2<T> (this->rt, leaf);
 			max = x;
+		} else {
+			// x is equal to one of our leaves; therefore, 
+			// we do nothing.
+			n = new BalancedEmpty<T>();
 		}
 		// Now we return m, n and the new maximum...
 		return make_tuple (m, n, max);
@@ -317,31 +356,31 @@ insert_ret_type<T> BalancedNode3<T>::insert(T x) {
 	Balanced23Tree<T> *ri; // Right insert result
 	T		  max; // The maximum of both li and ri
 
-	if (x < this->leftMax) {
+	if (x <= this->leftMax) {
 		tie (li, ri, max) = this->lt->insert(x);
 		if (ri->empty()) {
 			// I remain a 3-node
 			this->lt = li;
-			return make_tuple (
+			return 	make_tuple (
 				  this
-				, new BalancedEmpty<T>
-				, this->rt->max()); // TODO: Can I get rid of max()?
+				, new BalancedEmpty<T> ()
+				, this->rt->max());
 		} else {
 			// I split into 2 2-nodes, because our lt has split in 2
 			// 1st case
-			return make_tuple (
+			return 	make_tuple (
 				  new BalancedNode2<T> (li, ri)
 				, new BalancedNode2<T> (this->mt, this->rt)
 				, this->rt->max());
 		}
-	} else if (x < this->middleMax) {
+	} else if (x <= this->middleMax) {
 		tie (li, ri, max) = this->mt->insert(x);
 		if (ri->empty()) {
 			this->mt = li;
 			return make_tuple (
 				  this
 				, new BalancedEmpty<T>()
-				, this->rt->max()); // TODO: Can I get rid of max()?
+				, this->rt->max()); 
 		} else {
 			// I split into 2 2-nodes, 2nd case
 			return make_tuple (
