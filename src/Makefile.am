@@ -20,7 +20,8 @@ skiena_3_16_SOURCES = \
 	bin_tree.cxx \
 	bin_tree.h \
 	balanced_23_tree.h \
-	dictionary.h
+	dictionary.h \
+	balanced_avl_tree.h
 
 skiena_3_16_CXXFLAGS = --std=c++11 
 

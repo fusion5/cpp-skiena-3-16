@@ -62,7 +62,7 @@ int main()
 
 	int i = 0;
 
-	while (f->good() && (i < 10000)) {
+	while (f->good() && (i < 1000)) {
 		
 		*f >> word;
 		boost::algorithm::to_lower(word);
@@ -79,7 +79,7 @@ int main()
 
 		node = b->find(word);
 		if (node->empty() != test) {
-			cout << "Could not find in bin. tree the word: " 
+			cout << "Could not find in the bin. tree the word: " 
 			     << word;
 			return 0;
 		}
@@ -88,7 +88,7 @@ int main()
 		bal_node = bal_tree->find(word);
 		if (bal_node->empty() != test) {
 			cout << bal_tree->pp() << endl;
-			cout << "Could not find in bal. tree the word: " 
+			cout << "Could not find in the bal. tree the word: " 
 			     << word << endl;
 			return 0;
 		}
@@ -96,31 +96,38 @@ int main()
 			bal_tree = balanced_23_tree_insert<string> (
 				bal_tree, word);
 
-		avl_tree->insert(word);
+		avl_node = avl_tree->find(word);
+		if (avl_node->empty() != test) {
+			cout << "Could not find in the AVL tree the word: "
+			     << word << endl;
+			return 0;
+		}
+		if (avl_node->empty())
+			avl_tree = avl_tree->insert(word);
 
 		i++;
 	}
 
-	cout << b->pp()        << endl;
-	cout << bal_tree->pp() << endl;
+	cout << b->pp()        << endl << endl;
+	cout << bal_tree->pp() << endl << endl;
+	cout << avl_tree->pp() << endl << endl;
 
-	cout << "List steps: " << 
-		List<string>::steps << endl;
-
-	cout << "BinTree steps: " << 
-		BinTree<string>::steps << endl;
-
+	cout << "List steps: " << List<string>::steps << endl;
+	cout << "BinTree steps: " << BinTree<string>::steps << endl;
 	cout << "Balanced 2-3 Tree steps: " << 
 		Balanced23Tree<string>::steps << endl;
-
+	cout << "AVL Tree steps: " << AVLTree<string>::steps << endl;
+	
 	cout << "Total words: " << i << "; list size (unique words): " 
  	     << l->size() 
 	     << "; tree size (unique words): "
 	     << b->size()
 	     << "; balanced 2-3 tree size (unique words): "
 	     << bal_tree->size()
+	     << "; AVL tree size (unique words): "
+	     << avl_tree->size()
+	     << ", height " << avl_tree->height()
 	     << endl;
-
 
 	return 0;
 }
