@@ -57,7 +57,7 @@ int main()
 	Balanced23Tree<string> *bal_tree = new BalancedEmpty<string>();
 	Balanced23Tree<string> *bal_node;
 
-	AVLTree<string> *avl_tree = new AVLEmpty<string>();
+	unique_ptr<AVLTree<string> > avl_tree (new AVLEmpty<string>());
 	AVLTree<string> *avl_node;
 
 	int i = 0;
@@ -102,8 +102,12 @@ int main()
 			     << word << endl;
 			return 0;
 		}
-		if (avl_node->empty())
-			avl_tree = avl_tree->insert(word);
+		if (avl_node->empty()) {
+			// avl_tree_insert(avl_tree, word);
+			insert_avl_type<string> r = avl_tree->insert(word);
+			if (r) avl_tree.reset(r.release());
+			cout << avl_tree->pp() << endl;
+		}
 
 		i++;
 	}

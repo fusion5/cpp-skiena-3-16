@@ -10,7 +10,7 @@ using namespace std;
 template <class T> class AVLTree;
 
 template <class T>
-using insert_avl_type = AVLTree<T>*;
+using insert_avl_type = unique_ptr<AVLTree<T> >;
 
 template <class T>
 class AVLTree {
@@ -22,8 +22,13 @@ class AVLTree {
 		virtual bool empty() = 0;
 		virtual AVLTree<T> *left() = 0;
 		virtual AVLTree<T> *right() = 0;
+		virtual AVLTree<T> *release_right() = 0;
+		virtual AVLTree<T> *release_left() = 0;
 		virtual string pp () = 0;
 		virtual int size () = 0;
+
+		unique_ptr<AVLTree<T> > lt;
+		unique_ptr<AVLTree<T> > rt;
 
 		static int steps;
 };
@@ -43,11 +48,16 @@ class AVLNode: public AVLTree<T> {
 		bool empty ();
 		AVLTree<T> *left();
 		AVLTree<T> *right();
+		AVLTree<T> *release_left();
+		AVLTree<T> *release_right();
 		string pp ();
 		int size ();
+
+		unique_ptr<AVLTree<T> > lt;
+		unique_ptr<AVLTree<T> > rt;
 	protected:
-		AVLTree<T> *lt;
-		AVLTree<T> *rt;
+		// AVLTree<T> *lt;
+		// AVLTree<T> *rt;
 	private:
 		T x;
 		int h;
@@ -65,20 +75,27 @@ class AVLEmpty: public AVLTree<T> {
 		bool empty ();
 		AVLTree<T> *left();
 		AVLTree<T> *right();
+		AVLTree<T> *release_left();
+		AVLTree<T> *release_right();
 		string pp ();
 		int size ();
+
+		unique_ptr<AVLTree<T> > lt;
+		unique_ptr<AVLTree<T> > rt;
 };
 
 /* constructors */
 template <class T>
 AVLNode<T>::AVLNode (AVLTree<T> *lt, AVLTree<T> *rt, T x) {
-	this->lt = lt;
-	this->rt = rt;
+	this->lt = unique_ptr<AVLTree<T> >(lt);
+	this->rt = unique_ptr<AVLTree<T> >(rt);
 	this->x  = x;
 	this->h  = max (lt->height(), rt->height()) + 1;
 }
 template <class T>
 AVLEmpty<T>::AVLEmpty() {
+	this->lt = nullptr;
+	this->rt = nullptr;
 }
 
 /* destructors */
@@ -90,21 +107,45 @@ AVLEmpty<T>::~AVLEmpty() {
 }
 
 
+/* release_left */
+template <class T>
+AVLTree<T> *AVLNode<T>::release_left(){
+	return this->lt.release();
+}
+template <class T>
+AVLTree<T> *AVLEmpty<T>::release_left() {
+	cerr << "Calling release_left() on an empty node!" << endl;
+	// return nullptr;
+	throw "error";
+}
+
+/* release_right */
+template <class T>
+AVLTree<T> *AVLNode<T>::release_right(){
+	return this->rt.release();
+}
+template <class T>
+AVLTree<T> *AVLEmpty<T>::release_right() {
+	cerr << "Calling release_right() on an empty node!" << endl;
+	throw "error";
+}
+
 /* left */
 template <class T>
 AVLTree<T> *AVLNode<T>::left() {
-	return this->lt;
+	return this->lt.get();
 }
 template <class T>
 AVLTree<T> *AVLEmpty<T>::left() {
 	cerr << "Calling left() on an empty node!" << endl;
+	// return nullptr;
 	throw "error";
 }
 
 /* right */
 template <class T>
 AVLTree<T> *AVLNode<T>::right() {
-	return this->rt;
+	return this->rt.get();
 }
 template <class T>
 AVLTree<T> *AVLEmpty<T>::right() {
@@ -116,9 +157,9 @@ AVLTree<T> *AVLEmpty<T>::right() {
 template <class T>
 string AVLNode<T>::pp() {
 	return "(Node " 
-		+ this->left()->pp() + ", " 
+		+ this->lt->pp() + ", " 
 		+ this->value() + ", "
-		+ this->right()->pp() + ")";
+		+ this->rt->pp() + ")";
 }
 template <class T>
 string AVLEmpty<T>::pp() {
@@ -129,7 +170,7 @@ string AVLEmpty<T>::pp() {
 template <class T>
 int AVLNode<T>::size() {
 	AVLTree<T>::steps++;
-	return 1 + this->left()->size() + this->right()->size();
+	return 1 + this->lt->size() + this->rt->size();
 }
 template <class T>
 int AVLEmpty<T>::size() {
@@ -168,8 +209,8 @@ template <class T>
 AVLTree<T> *AVLNode<T>::find(T x) {
 	AVLTree<T>::steps++;
 	if (this->x == x) return this;
-	if (x < this->x)  return this->left()->find(x);
-	if (x > this->x)  return this->right()->find(x);
+	if (x < this->x)  return this->lt->find(x);
+	if (x > this->x)  return this->rt->find(x);
 }
 template <class T>
 AVLTree<T> *AVLEmpty<T>::find(T x) {
@@ -177,62 +218,152 @@ AVLTree<T> *AVLEmpty<T>::find(T x) {
 	return this;
 }
 
-/* insert */
+/*
+template <class T>
+void avl_tree_insert (unique_ptr<AVLTree<T> > t, T x) {
+	insert_avl_type<T> r = t->insert (x);
+	if (r) t.reset(r.release()); 
+}
+*/
+
+ /* insert */
 template <class T>
 insert_avl_type<T> AVLNode<T>::insert(T x) {
 	AVLTree<T>::steps++;
-	// Inserting to an already existing value!
-	if (x == this->x) return this;
+	// Inserting to an already existing value, do nothing...
+	if (x == this->x) return nullptr;
 
 	if (x < this->x) {
-		this->lt = this->left()->insert (x);
-		// Are we heavy on the left side after the insertion?
-		if (this->left()->height() > this->right()->height() + 1) {
+		insert_avl_type<T> r = this->lt->insert (x);
+		if (r) 	{
+			cout << this->x << " left child reassiged... from: " 
+			     << this->lt->pp()
+			     << endl;
 
-			// Rotate by creating a copy...
-			// I think it can work without a copy as well!
-			// After the insert, lt is a balanced tree of height 2 or more.
-			// Therefore, it must have both lt->lt and lt->rt, otherwise
+			this->lt.reset (r.release());
+
+			cout << "to: "
+			     << this->lt->pp()
+			     << endl;
+		}
+		// Are we heavy on the left side after the insertion?
+		if (this->lt->height() > this->rt->height() + 1) {
+
+			cout << this->x << " rotate left" << endl;
+			// Rotate...
+			// Here, lt is a balanced tree of height 2 or 
+			// more.
+			// Therefore, it must have both lt->lt and lt->rt, else 
 			// it wouldn't be a balanced tree.
+			cout << this->x << ": " << this->pp() << endl;
+			cout << "height: " << this->lt->height() 
+			     << " empty: " << this->lt->empty()
+			     << endl;
+
+			cout << this->x << " l: " << this->lt->pp() << endl;
+			cout << (bool) (this->lt) << endl;
+
+			cout << this->x << " ll: " << endl;
+			cout << (bool) (this->left()->left()) << endl;
+			cout << this->left()->left()->pp() << endl;
+
+			cout << this->x << " lr: " << this->left()->right()->pp() 
+			     << endl;
+			cout << (bool) (this->left()->rt) << endl;
+
 			this->h = max ( this->left()->right()->height()	
-				      , this->rt->height()) + 1;
-			AVLNode<T> *n = new AVLNode(
-				  this->left()->left()
-				, this
-				, this->left()->value());
-			// Deallocate the old lt, because n takes its place
-			// delete this->lt;
-			this->lt = this->left()->right();
-			return n;
+				      , this->right()->height()) + 1;
+
+			// Essentially, l needs to be deallocated so we pick
+			// it apart...
+			// AVLTree<T> *ll = this->lt->lt.release();
+			AVLTree<T> *lr = this->left()->release_right();
+
+			// T v = this->lt->value();
+
+			/*
+			   this          l 
+			   / \          / \
+			  l   r  -->   ll this
+			 / \              / \
+			ll  lr           lr  r
+			*/
+
+			AVLTree<T> *l = this->lt.release();
+			AVLTree<T> *r = this->rt.release();
+
+			// this->left is now null...
+			// l->lt = unique_ptr<AVLTree<T> >(ll);
+			// The problem is that now, 'this' becomes referenced by 2
+			// unique_ptr, the one from our parent and this one.
+			l->rt = unique_ptr<AVLTree<T> >(
+				new AVLNode<T>(lr, r, this->x));
+
+			cout << this->x << " ok2" << endl;
+
+			// this->lt = unique_ptr<AVLTree<T> >(lr);
+			// return unique_ptr<AVLTree<T> >(new AVLNode (ll, this, v));
+			// AVLTree<T> *l = this->lt.release();
+			// Make l the top child instead of me...
+			// I will be freed by the caller.
+			return unique_ptr<AVLTree<T> >(l);
 		}
 	} else {
 		// x > this->x
-		this->rt = this->right()->insert (x);
+		insert_avl_type<T> r = this->rt->insert (x);
+		if (r) {
+			cout << this->x << " right child reassign..." 
+			     << endl;
+			this->rt.reset(r.release());
+		}
 		// Are we heavy on the right side after the insertion?
-		if (this->right()->height() > this->left()->height() + 1) {
+		if (this->rt->height() > this->lt->height() + 1) {
+			cout << "Rotate right" << endl;
 			// Rotate by creating a copy...
 			this->h = max ( this->left()->height()
 				      , this->right()->left()->height()) + 1;
-			AVLNode<T> *n = new AVLNode(
-				  this
-				, this->right()->right()
-				, this->right()->value());
-			// Deallocate the old rt, because n takes its place 
-			// delete this->rt;
-			this->rt = this->right()->left();
-			return n; 
+
+			AVLTree<T> *rl = this->right()->release_left();
+
+			/*
+ 				this             r
+				/ \             / \
+			       l   r      ->  this rr
+			          / \         / \
+			         rl  rr      l  rl
+
+ 			*/
+
+			AVLTree<T> *l = this->lt.release();
+			AVLTree<T> *r = this->rt.release();
+
+			r->lt = unique_ptr<AVLTree<T> >(
+				new AVLNode<T>(l, rl, this->x));
+			
+			return unique_ptr<AVLTree<T> >(r);
+			/*
+			AVLTree<T> *r  = this->rt.release();
+			AVLTree<T> *rl = r->left_release();
+			AVLTree<T> *rr = r->right_release();
+
+			this->rt = unique_ptr<AVLTree<T> >(rl);
+
+			return unique_ptr<AVLTree<T> >(
+				new AVLNode (this, rr, r->value()));
+			*/
 		}
 	}
-	this->h = max (this->lt->height(), this->rt->height()) + 1;
-	return this;
-}
 
+	this->h = max (this->lt->height(), this->rt->height()) + 1;
+
+	return nullptr;
+}
 template <class T>
 insert_avl_type<T> AVLEmpty<T>::insert (T x) {
 	AVLTree<T>::steps++;
-	AVLTree<T> *n = new AVLNode<T>(new AVLEmpty(), new AVLEmpty(), x);
-	// FIXME: I have to dealocate myself!
-	return n;
+	return unique_ptr<AVLTree<T> > (
+		new AVLNode<T>(new AVLEmpty(), new AVLEmpty(), x)
+	);
 }
 
 #endif
