@@ -103,9 +103,10 @@ int main()
 			return 0;
 		}
 		if (avl_node->empty()) {
+			cout << "Insert: " << word << endl;
 			// avl_tree_insert(avl_tree, word);
 			insert_avl_type<string> r = avl_tree->insert(word);
-			if (r) avl_tree.reset(r.release());
+			if (!r->empty()) avl_tree.reset(r);
 			cout << avl_tree->pp() << endl;
 		}
 
