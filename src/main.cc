@@ -39,7 +39,6 @@ int main()
 	// Parse words from a file...
 	// To implement also: 
 	// - A trie.
-	// - AVL tree
 	// - Red-black tree
 	
 	ifstream *f;
@@ -62,7 +61,7 @@ int main()
 
 	int i = 0;
 
-	while (f->good() && (i < 1000)) {
+	while (f->good() && (i < 5000)) {
 		
 		*f >> word;
 		boost::algorithm::to_lower(word);
@@ -70,13 +69,27 @@ int main()
 		  std::remove_if ( word.begin(), word.end()
                                  , (int(*)(int)) not_isalnum ), word.end());
 
-		bool test;
+		// cout << avl_tree->pp() << endl;
+		// cout << l->pp() << endl;
 
 		m = l->find(word);
-		test = m->empty();
+		bool empty = m->empty();
 
-		if (m->empty()) l = l->insert(word);
+		// cout << word << " result empty? " << empty << endl;
 
+		if (m->empty()) {
+			// cout << word << " inserting! " << endl;
+			// int os = l->size();
+			list_insert (&l, word);
+			// assert(l->size() == (os + 1));
+		} else {
+			// cout << word << " removing! " << endl;
+			// int os = l->size();
+			list_remove (&l, word);
+			// assert(l->size() == (os - 1));
+		}
+
+		/*
 		node = b->find(word);
 		if (node->empty() != test) {
 			cout << "Could not find in the bin. tree the word: " 
@@ -95,41 +108,47 @@ int main()
 		if (bal_node->empty())
 			bal_tree = balanced_23_tree_insert<string> (
 				bal_tree, word);
+		*/
 
 		avl_node = avl_tree->find(word);
-		if (avl_node->empty() != test) {
-			cout << "Could not find in the AVL tree the word: "
-			     << word << endl;
-			return 0;
-		}
+		assert (avl_node->empty() == empty);
+		
 		if (avl_node->empty()) {
-			cout << "Insert: " << word << endl;
-			// avl_tree_insert(avl_tree, word);
-			insert_avl_type<string> r = avl_tree->insert(word);
-			if (!r->empty()) avl_tree.reset(r);
-			cout << avl_tree->pp() << endl;
+			// cout << "Insert: " << word << endl;
+			avl_insert (&avl_tree, word);
+			// cout << avl_tree->pp() << endl;
+		} else {
+			// int os = avl_tree->size();
+			// cout << "Delete: " << word << endl;
+			// cout << avl_tree->pp() << endl;
+			avl_remove (&avl_tree, word);
+			// cout << avl_tree->pp() << endl;
+			// cout << avl_tree->size() << " " << os << endl;
+			// assert(avl_tree->size() == (os - 1));
 		}
-
 		i++;
 	}
 
+	assert (avl_tree->size() == l->size());
+
+	cout << l->pp()        << endl << endl;
 	cout << b->pp()        << endl << endl;
 	cout << bal_tree->pp() << endl << endl;
 	cout << avl_tree->pp() << endl << endl;
 
 	cout << "List steps: " << List<string>::steps << endl;
 	cout << "BinTree steps: " << BinTree<string>::steps << endl;
-	cout << "Balanced 2-3 Tree steps: " << 
-		Balanced23Tree<string>::steps << endl;
+	cout << "Balanced 2-3 Tree steps: " 
+	     << Balanced23Tree<string>::steps << endl;
 	cout << "AVL Tree steps: " << AVLTree<string>::steps << endl;
 	
-	cout << "Total words: " << i << "; list size (unique words): " 
+	cout << "Total words: " << i << "; list size: " 
  	     << l->size() 
-	     << "; tree size (unique words): "
+	     << "; tree size: "
 	     << b->size()
-	     << "; balanced 2-3 tree size (unique words): "
+	     << "; balanced 2-3 tree size: "
 	     << bal_tree->size()
-	     << "; AVL tree size (unique words): "
+	     << "; AVL tree size: "
 	     << avl_tree->size()
 	     << ", height " << avl_tree->height()
 	     << endl;

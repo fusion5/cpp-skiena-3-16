@@ -9,8 +9,9 @@
  * When we insert into a 3 node it splits into 2 2-nodes, which we 
  * re-insert into the parent
  *
- * I think it needs better memory management to deallocate nodes when it
+ * I think this needs memory management to deallocate nodes when it
  * splits a node into 2...
+ *
  */
 
 #include <string.h>
@@ -27,7 +28,7 @@ using insert_ret_type = tuple <Balanced23Tree<T>*, Balanced23Tree<T>*, T>;
 template <class T>
 class Balanced23Tree {
 	public:
-		virtual Balanced23Tree *find (T x) = 0;
+		virtual Balanced23Tree<T> *find (T x) = 0;
 		/*
 		 * When I get a new value through insert, I obtain 1 or 2 
 		 * nodes and an updated maximum. If I get back just 1 node, I 
@@ -36,12 +37,17 @@ class Balanced23Tree {
 		 * must handle the split and accomodate the node. Potentially, 
 		 * this means that I might myself also.
 		 **/
-		virtual insert_ret_type<T> insert (T x) = 0;
-		virtual T                  max    ()    = 0;
-		virtual bool		   empty  ()    = 0;
-		virtual bool		   leaf   ()    = 0;
-		virtual string 		   pp     ()    = 0;
-		virtual int 		   size   ()    = 0;
+		virtual insert_ret_type<T> insert       (T x) = 0;
+		virtual T                  max          ()    = 0;
+		virtual bool		   empty        ()    = 0;
+		virtual bool		   leaf         ()    = 0;
+		virtual string 		   pp           ()    = 0;
+		virtual int 		   size         ()    = 0;
+		virtual Balanced23Tree<T>  *release_min ()    = 0;
+		virtual Balanced23Tree<T>  *release_max ()    = 0;
+		virtual Balanced23Tree<T>  *remove      (T x
+		  , Balanced23Tree<T> *smaller_sibling
+		  , Balanced23Tree<T> *larger_sibling    )    = 0;
 
 		static int steps;
 };
@@ -61,6 +67,7 @@ class BalancedNode2: public Balanced23Tree<T> {
 		bool		   leaf ();
 		string		   pp ();
 		int		   size();
+		Balanced23Tree<T>  *release_min ();
 	private:
 		T leftMax;
 		T middleMax;
@@ -71,22 +78,23 @@ class BalancedNode2: public Balanced23Tree<T> {
 template <class T>
 class BalancedNode3: public Balanced23Tree<T> {
 	public:
-		BalancedNode3<T>  ( Balanced23Tree<T> *lt
-				  , Balanced23Tree<T> *mt
-				  , Balanced23Tree<T> *rt );
-		Balanced23Tree<T> *find (T x);
+		BalancedNode3<T>   ( Balanced23Tree<T> *lt
+				   , Balanced23Tree<T> *mt
+				   , Balanced23Tree<T> *rt );
+		Balanced23Tree<T>  *find (T x);
 		insert_ret_type<T> insert (T x);
 		T                  max ();
 		bool		   empty ();
 		bool 		   leaf ();
 		string		   pp ();
 	        int 		   size();
+		Balanced23Tree<T>  *release_min ();
 	private:
 		T leftMax;
 		T middleMax;
-		Balanced23Tree<T> *lt; // Left sub-tree
-		Balanced23Tree<T> *mt; // Middle sub-tree
-		Balanced23Tree<T> *rt; // Right sub-tree
+		Balanced23Tree<T>  *lt; // Left sub-tree
+		Balanced23Tree<T>  *mt; // Middle sub-tree
+		Balanced23Tree<T>  *rt; // Right sub-tree
 };
 
 template <class T>
@@ -100,6 +108,7 @@ class BalancedLeaf: public Balanced23Tree<T> {
 		bool		   leaf ();
 		string		   pp ();
 		int		   size ();
+		Balanced23Tree<T>  *release_min ();
 	private:
 		T x;
 };
@@ -107,14 +116,15 @@ class BalancedLeaf: public Balanced23Tree<T> {
 template <class T>
 class BalancedEmpty: public Balanced23Tree<T> {
 	public:
-		BalancedEmpty<T>  ();
-		Balanced23Tree<T> *find (T x);
+		BalancedEmpty<T>   ();
+		Balanced23Tree<T>  *find (T x);
 		insert_ret_type<T> insert (T x);
 		T                  max ();
 		bool		   empty ();
 		bool		   leaf ();
 		string		   pp ();
 		int		   size ();
+		Balanced23Tree<T>  *release_min ();
 };
 
 // vanilla function that allows us to insert properly (it handles the tuple 
@@ -189,6 +199,32 @@ template <class T> bool BalancedLeaf <T>::leaf() { return true; }
 template <class T> bool BalancedNode2<T>::leaf() { return false; }
 template <class T> bool BalancedNode3<T>::leaf() { return false; }
 
+/* release_min 
+ *   returns the node to replace oneself after the release
+ * */
+template <class T>
+Balanced23Tree<T> *BalancedEmpty<T>::release_min () {
+	assert(false);
+	throw "error";
+}
+Balanced23Tree<T> *BalancedLeaf<T>::release_min () {
+	// release this, replace this with an empty tree...
+	return new BalancedEmpty<T>();
+}
+Balanced23Tree<T> *BalancedNode2<T>::release_min () {
+	if (lt->leaf()) {
+		assert(mt->leaf());
+		return this->mt;
+	}
+
+	Balanced23Tree<T> *ret;
+	ret = this->lt->release_min();
+
+	if (ret->leaf()) {
+		
+	}
+}
+
 /* find */
 template <class T>
 Balanced23Tree<T> *BalancedEmpty<T>::find (T x) { 
@@ -233,6 +269,129 @@ T BalancedLeaf<T>::max()  {
 template <class T>
 T BalancedEmpty<T>::max() { throw "Cannot call max here"; }
 
+/* remove 
+ *   returns - nullptr if 'this' doesn't have to be replaced with anything
+ *           - a tree pointer if 'this' has to be replaced with something
+ * */
+template <class T>
+void BalancedEmpty<T>::remove (T x, Balanced23<T> *siblings[]) {
+	Balanced23Tree<T>::steps++;
+	return nullptr;
+}
+template <class T>
+BalancedTree<T> *BalancedLeaf<T>::remove (T x, Balanced23<T> *siblings[]) {
+	if (this->x == x) {
+		// It means replace myself with an empty node...
+		// TODO: If I do this, does c++ deallocate the new object?
+		return new BalancedEmpty<T>();
+	}
+	return nullptr; // Don't change me, trying to remove a value that doesn't
+	                // exist
+}
+template <class T>
+BalancedTree<T> *BalancedNode2<T>::remove (T x,
+  Balanced23Tree<T> *small_sib, Balanced23Tree<T> *large_sib) {
+
+ 	if (this->lt->leaf() && this->mt->leaf()) {
+		if (this->lt->remove(x, nullptr, this->mt)->empty()) {
+			delete this->lt;
+			return this->mt;
+		}
+		if (this->mt->remove(x, this->lt, nullptr)->empty()) {
+			delete this->mt;
+			return this->lt;
+		}
+  	}
+
+	if (x <= this->leftMax) {
+		Balanced23Tree<T> *lrem = this->lt->remove(x, nullptr, this->mt);
+		if (lrem == nullptr) return nullptr;
+
+		if (lrem->empty()) { // We need to remove lt and we are a 2-node
+			delete this->lt;
+
+			// First we need to try to borrow from a sibling
+			if ((small_sib != nullptr) && 
+			    (small_sib->nchildren() == 3))
+				this->lt = 
+			return this->mt;
+		}
+	
+		this->lt = lrem;
+		return nullptr;
+	} else if (x <= this->middleMax) {
+		Balanced23Tree<T> *mrem = this->mt->remove(x, this->lt, nullptr);
+		if (mrem == nullptr) return nullptr;
+
+		if (mrem->empty()) {
+			delete this->mt;
+			return this->lt;
+		}
+		
+		this->mt = mrem;
+	}
+}
+
+template <class T>
+BalancedTree<T> *BalancedNode3<T>::remove (T x, 
+  Balanced23Tree<T> *small_sib, Balanced23Tree<T> *large_sib) {
+
+	if (this->lt->leaf() && this->mt->leaf() && this->rt->leaf()) {
+		if (this->lt->remove(x)->empty()) {
+			delete this->lt;
+			return new BalancedNode2 (this->mt, this->rt);
+		} else if (this->mt->remove(x)->empty()) {
+			delete this->mt;
+			return new BalancedNode2 (this->lt, this->rt);
+		} else if (this->rt->remove(x)->empty()) {
+			delete this->rt;
+			return new BalancedNode2 (this->lt, this->mt);
+		}
+		return this; // removing a value that doesn't exist
+	}
+
+	if (x <= this->leftMax) {
+		Balanced23Tree<T> *lrem = this->lt->remove(x, null, this->mt);
+		/*
+		if (lrem->empty()) {
+			delete this->lt;
+			return new BalancedNode2 (this->mt, this->rt);
+		}
+		if (lrem->leaf()) {
+			// The left subtree has become a leaf, but our other
+			// subtrees are not. Therefore, we rebalance.
+			assert (!(this->mt->leaf()));
+			assert (!(this->rt->leaf()));
+			// Take the minimum from mt and put it in the 
+			// left sub-tree. This might make mt into a leaf itself...
+
+			Balanced23Tree<T> *min_m = this->mt->release_min();
+
+			this->lt = new BalancedNode2 (lrem, min_m);
+
+			if (!this->mt->leaf()) return this; // we're ok
+
+			Balanced23Tree<T> *min_r  = this->rt->release_min();
+			Balanced23Tree<T> *old_mt = this->mt; // old middle leaf
+
+			this->mt = new BalancedNode2 (old_mt, min_r);
+
+			if (!this->rt->leaf()) return this; // we're ok
+
+			// Reduce this into a 2-node...
+			return new BalancedNode2 (
+			  this->lt, new BalancedNode3 (old_mt, min_r, this->rt));
+		}
+		return this; // we're ok
+		*/
+	} else if (x <= this->middleMax) {
+		Balanced23Tree<T> *mrem = this->mt->remove(x);
+		// We do the same kind of dancing and jumping around...
+	} else {
+		Balanced23Tree<T> *rrem = this->rt->remove(x);
+	}
+}
+
 /* insert */
 template <class T>
 insert_ret_type<T> BalancedEmpty<T>::insert (T x) {
@@ -273,6 +432,8 @@ insert_ret_type<T> BalancedNode2<T>::insert (T x) {
 		else if (this->middleMax < x) {
 			m = new BalancedNode3<T> (this->lt, this->mt, leaf);
 			max = x;
+		} else {
+			// Note: x == leftMax or x == middleMax
 		}
 
 		return make_tuple (m, new BalancedEmpty<T>(), max);
@@ -377,13 +538,13 @@ insert_ret_type<T> BalancedNode3<T>::insert(T x) {
 		tie (li, ri, max) = this->mt->insert(x);
 		if (ri->empty()) {
 			this->mt = li;
-			return make_tuple (
+			return  make_tuple (
 				  this
 				, new BalancedEmpty<T>()
 				, this->rt->max()); 
 		} else {
 			// I split into 2 2-nodes, 2nd case
-			return make_tuple (
+			return  make_tuple (
 				  new BalancedNode2<T> (this->lt, li)
 				, new BalancedNode2<T> (ri, this->rt)
 				, this->rt->max());

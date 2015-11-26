@@ -9,30 +9,37 @@ using namespace std;
 
 template <class T> class AVLTree;
 
-template <class T>
-using insert_avl_type = AVLTree<T> *;
+/*
+ *  e.g. tree:
+ *
+ *      2
+ *     / \
+ *    1   3
+ **/
 
 template <class T>
 class AVLTree {
 	public: 
-		virtual AVLTree<T> *find (T x) = 0;
-		virtual insert_avl_type<T> insert (T x) = 0;
-		virtual int height () = 0;
-		virtual T value () = 0;
-		virtual bool empty() = 0;
-		virtual AVLTree<T> *left() = 0;
-		virtual AVLTree<T> *right() = 0;
-		virtual AVLTree<T> *release_right() = 0;
-		virtual AVLTree<T> *release_left() = 0;
-		virtual void replace_left(AVLTree<T> *lt) = 0;
-		virtual void replace_right(AVLTree<T> *rt) = 0;
-		virtual string pp () = 0;
-		virtual int size () = 0;
-
+		virtual AVLTree<T> *find          (T x) = 0;
+		virtual AVLTree<T> *release_max   (AVLTree<T> *parent) = 0;
+		virtual AVLTree<T> *remove        (T x) = 0;
+		virtual AVLTree<T> *insert        (T x) = 0;
+		virtual int        height         ()    = 0;
+		virtual T          value          ()    = 0;
+		virtual bool       empty          ()    = 0;
+		virtual AVLTree<T> *left          ()    = 0;
+		virtual AVLTree<T> *right         ()    = 0;
+		virtual AVLTree<T> *release_right ()    = 0;
+		virtual AVLTree<T> *release_left  ()    = 0;
+		virtual void       replace_left   (AVLTree<T> *lt) = 0;
+		virtual void       replace_right  (AVLTree<T> *rt) = 0;
+		virtual string     pp             ()    = 0;
+		virtual int        size           ()    = 0;
+		static  int        steps;
+	protected:
+	private:
 		unique_ptr<AVLTree<T> > lt;
 		unique_ptr<AVLTree<T> > rt;
-
-		static int steps;
 };
 
 template <class T>
@@ -41,51 +48,55 @@ int AVLTree<T>::steps = 0;
 template <class T>
 class AVLNode: public AVLTree<T> {
 	public:
-		AVLNode (AVLTree<T> *lt, AVLTree<T> *rt, T x);
+		AVLNode  (AVLTree<T> *lt, AVLTree<T> *rt, T x);
 		~AVLNode ();
-		AVLTree<T> *find (T x);
-		insert_avl_type<T> insert (T x);
-		int height();
-		T value  ();
-		bool empty ();
-		AVLTree<T> *left();
+		AVLTree<T> *find          (T x);
+		AVLTree<T> *release_max   (AVLTree<T> *parent);
+		AVLTree<T> *remove        (T x);
+		AVLTree<T> *insert        (T x);
+		int        height         ();
+		T          value          ();
+		bool       empty          ();
+		AVLTree<T> *left          ();
 		AVLTree<T> *right();
-		AVLTree<T> *release_left();
-		AVLTree<T> *release_right();
-		void replace_left (AVLTree<T> *lt);
-		void replace_right (AVLTree<T> *rt);
-		string pp ();
-		int size ();
+		AVLTree<T> *release_left  ();
+		AVLTree<T> *release_right ();
+		void       replace_left   (AVLTree<T> *lt);
+		void       replace_right  (AVLTree<T> *rt);
+		string     pp             ();
+		int        size           ();
 
+	protected:
+	private:
+		T          x;
+		int        h;
+		AVLTree<T> *rotate_left   ();
+		AVLTree<T> *rotate_right  ();
 		unique_ptr<AVLTree<T> > lt;
 		unique_ptr<AVLTree<T> > rt;
-	protected:
-		// AVLTree<T> *lt;
-		// AVLTree<T> *rt;
-	private:
-		T x;
-		int h;
 };
 
 template <class T>
 class AVLEmpty: public AVLTree<T> {
 	public:
-		AVLEmpty ();
-		~AVLEmpty ();
-		AVLTree<T> *find (T x);
-		insert_avl_type<T> insert (T x);
-		int height ();
-		T value();
-		bool empty ();
-		AVLTree<T> *left();
-		AVLTree<T> *right();
-		AVLTree<T> *release_left();
-		AVLTree<T> *release_right();
-		void replace_left  (AVLTree<T> *lt);
-		void replace_right (AVLTree<T> *rt);
-		string pp ();
-		int size ();
-
+		AVLEmpty                  ();
+		~AVLEmpty                 ();
+		AVLTree<T> *find          (T x);
+		AVLTree<T> *release_max   (AVLTree<T> *parent);
+		AVLTree<T> *remove        (T x);
+		AVLTree<T> *insert        (T x);
+		int        height         ();
+		T          value          ();
+		bool       empty          ();
+		AVLTree<T> *left          ();
+		AVLTree<T> *right         ();
+		AVLTree<T> *release_left  ();
+		AVLTree<T> *release_right ();
+		void       replace_left   (AVLTree<T> *lt);
+		void       replace_right  (AVLTree<T> *rt);
+		string     pp             ();
+		int        size           ();
+	private:
 		unique_ptr<AVLTree<T> > lt;
 		unique_ptr<AVLTree<T> > rt;
 };
@@ -104,6 +115,81 @@ AVLEmpty<T>::AVLEmpty() {
 	this->rt = nullptr;
 }
 
+/* Rotate left, right... 
+ * These methods leave the object unusable, they should be called only before 
+ * it's de-allocated... */
+template <class T>
+AVLTree<T> *AVLNode<T>::rotate_right() {
+	/*
+	   this          l 
+	   / \          / \
+	  l   r  -->   ll this
+	 / \              / \
+	ll  lr           lr  r
+	*/
+
+	assert (!this->left()->empty());
+
+	this->h = max (this->left()->right()->height(), 
+	  this->right()->height()) + 1;
+
+
+	// 'this' will be deallocated, so make sure it doesn't
+	// hold anything...
+	
+	AVLTree<T> *l = this->release_left();
+	AVLTree<T> *r = this->release_right();
+
+	assert (this->lt->empty());
+	assert (this->rt->empty());
+
+	AVLTree<T> *lr = l->release_right();
+
+	assert (this->left()->empty());
+	assert (this->lt->empty());
+	assert (l->right()->empty());
+
+	l->replace_right (new AVLNode<T>(lr, r, this->x));
+
+	assert (!l->right()->empty());
+
+	return l;
+}
+
+template <class T>
+AVLTree<T> *AVLNode<T>::rotate_left() {
+	// cout << this->x << " rotate right" << endl;
+	// Rotate by creating a copy...
+	/*
+		this             r
+		/ \             / \
+	       l   r     -->  this rr
+		  / \         / \
+		 rl  rr      l  rl
+	*/
+	this->h = max (this-> left()->height(),
+	  this->right()->left()->height()) + 1;
+	
+	AVLTree<T> *l = this->release_left();
+	AVLTree<T> *r = this->release_right();
+
+	AVLTree<T> *rl = r->release_left();
+	AVLTree<T> *newthis = new AVLNode<T>(l, rl, this->x);
+
+	r->replace_left (newthis);
+
+	assert (!r->left()->empty());
+
+	assert (newthis == r->left());
+	assert (newthis->value() == this->value());
+
+	assert (this->lt->empty());
+	assert (this->rt->empty());
+
+	return r;
+}
+
+
 /* destructors */
 template <class T>
 AVLNode<T>::~AVLNode() {
@@ -112,13 +198,13 @@ template <class T>
 AVLEmpty<T>::~AVLEmpty() {
 }
 
-
 /* release_left */
 template <class T>
 AVLTree<T> *AVLNode<T>::release_left(){
 	assert(this->lt);
 	AVLTree<T> *r = this->lt.release();
 	this->lt = unique_ptr<AVLTree<T> > (new AVLEmpty<T>());
+	this->h  = this->right()->height() + 1;
 	return r;
 }
 template <class T>
@@ -127,13 +213,13 @@ AVLTree<T> *AVLEmpty<T>::release_left() {
 	throw "error";
 }
 
-
 /* release_right */
 template <class T>
 AVLTree<T> *AVLNode<T>::release_right(){
 	assert(this->rt);
 	AVLTree<T> *r = this->rt.release();
 	this->rt = unique_ptr<AVLTree<T> > (new AVLEmpty<T>());
+	this->h = this->left()->height() + 1;
 	return r;
 }
 template <class T>
@@ -246,6 +332,132 @@ int AVLEmpty<T>::height() {
 	return 0;
 }
 
+/* remove 
+ * returns:
+ * 	nullptr if there is nothing to do
+ * 	a node pointer with which to replace myself (this)
+ * */
+template <class T>
+AVLTree<T> *AVLNode<T>::remove(T x) {
+	AVLTree<T>::steps++;
+	assert (this->lt);
+	assert (this->rt);
+	
+	if (x == this->x) {
+		// Remove myself... we know that the balance will be checked up
+		// the chain, and that heights will be adjusted as necessary.
+		
+		if (this->left()->empty() && this->right()->empty())
+			return new AVLEmpty<T>(); // I'm a leaf, just remove me
+		else if (this->left()->empty())
+			return this->release_right(); // Only got a right subtree
+		else if (this->right()->empty())
+			return this->release_left(); // Only got a left subtree
+		else {
+			// Neither is empty...
+			assert (!(this->left()->empty()));
+			assert (!(this->right()->empty()));
+
+			// Return the rightmost leaf in the left subtree, 
+			// and release it.
+
+			AVLTree<T> *lmax  = this->left()->release_max(this);
+
+			// lmaxl needs to take lmax's place...
+			AVLTree<T> *lmaxl = lmax->release_left();
+
+			// assert (lmax->left()->empty());
+			assert (lmax->right()->empty());
+			// Then, release my own children and give them to lmax
+			
+			assert (lmax->value() < this->x);
+			assert (this->x < this->right()->value());
+			assert (this->left()->empty() 
+			       || (lmax->value() > this->left()->value()));
+
+			lmax->replace_right(this->release_right());
+			lmax->replace_left(this->release_left());
+			
+			// I will be deallocated by my parent and replaced with
+			// rmost... this ensures a correct ordering in the
+			// resulting subtree.
+			return lmax;
+		}
+	}
+
+	if (x < this->x) {
+		AVLTree<T> *result;
+		result = this->left()->remove(x);
+		if (result) this->replace_left(result);
+		// We have potentially removed a node in our lt...
+		// Check if a rebalancing is needed, adjust heights.
+		// Are we heavy on the rhs?
+		if (this->rt->height() > this->lt->height() + 1)
+			return this->rotate_left(); // Heavy on the right side...
+
+		this->h = max (this->rt->height(), this->lt->height()) + 1;
+	}
+
+	if (x > this->x) {
+		AVLTree<T> *result;
+		result = this->right()->remove(x);
+		if (result) this->replace_right(result);
+		// We have potentially removed a node in our rt,
+		// Check if a rebalancing is needed, adjust heights.
+		// If no rebalancing is needed here return 'this'
+		// because a rebalancing might be needed upwards in the 
+		// tree.
+		if (this->lt->height() > this->rt->height() + 1)
+			return this->rotate_right(); // Heavy on the left side...
+
+		this->h = max (this->rt->height(), this->lt->height()) + 1;
+	}
+	
+	// Nothing to do upwards in the tree...
+	return nullptr;
+}
+template <class T> 
+AVLTree<T> *AVLEmpty<T>::remove(T x) {
+	// Trying to delete a value that hasn't been found in the tree, do nothing
+	return nullptr;
+}
+
+/* release_max */
+template <class T>
+AVLTree<T> *AVLNode<T>::release_max(AVLTree<T> *my_parent) {
+	AVLTree<T>::steps++;
+	if (this->right()->empty()) {
+		// I should be released!
+		//return this;
+		
+		assert (!(my_parent->empty()));
+
+		// we have descended only right-wise:
+		assert (!(my_parent->right()->empty()));
+
+		if (my_parent->right()->value() == this->value()) {
+			AVLTree<T> *lt = this->release_left();
+			AVLTree<T> *ret = my_parent->release_right();
+			my_parent->replace_right(lt);
+			return ret;
+		}
+
+		if (my_parent->left()->value() == this->value()) {
+			AVLTree<T> *lt = this->release_left();
+			AVLTree<T> *ret = my_parent->release_left();
+			my_parent->replace_left(lt);
+			return ret;
+		}
+	}
+
+	return this->right()->release_max(this);
+}
+template <class T>
+AVLTree<T> *AVLEmpty<T>::release_max(AVLTree<T> *my_parent) {
+	cerr << "Calling release_max() on an empty node!" << endl;
+	throw "error";
+}
+
 /* find */
 template <class T>
 AVLTree<T> *AVLNode<T>::find(T x) {
@@ -262,185 +474,58 @@ AVLTree<T> *AVLEmpty<T>::find(T x) {
 	return this;
 }
 
-/*
+/* 
+ * insert 
+ *   Returns a new node to replace the subtree, or nullptr if there is nothing
+ *   to replace...
+ */
 template <class T>
-void avl_tree_insert (unique_ptr<AVLTree<T> > t, T x) {
-	insert_avl_type<T> r = t->insert (x);
-	if (r) t.reset(r.release()); 
-}
-*/
-
- /* insert */
-template <class T>
-insert_avl_type<T> AVLNode<T>::insert(T x) {
+AVLTree<T> *AVLNode<T>::insert(T x) {
 	AVLTree<T>::steps++;
 	// Inserting to an already existing value, do nothing...
-	if (x == this->x) return new AVLEmpty<T>();
+	if (x == this->x) return nullptr;
 
 	assert(this->lt);
 	assert(this->rt);
 
 	if (x < this->x) {
-		insert_avl_type<T> r = this->lt->insert (x);
-		if (!r->empty()) {
-			cout << this->x << " left child reassiged... from: " 
-			     << this->lt->pp()
-			     << endl;
-
+		AVLTree<T> *r = this->lt->insert (x);
+		if (r != nullptr)
 			this->lt.reset (r);
 
-			cout << "to: "
-			     << this->lt->pp()
-			     << endl;
-		} else
-			delete r;
-
 		// Are we heavy on the left side after the insertion?
-		if (this->lt->height() > this->rt->height() + 1) {
-
-			cout << this->x << " rotate left" << endl;
-			// Rotate...
-			// Here, lt is a balanced tree of height 2 or 
-			// more.
-			// Therefore, it must have both lt->lt and lt->rt, else 
-			// it wouldn't be a balanced tree.
-			/*
-			cout << this->x << ": " << this->pp() << endl;
-			cout << "height: " << this->lt->height() 
-			     << " empty: " << this->lt->empty()
-			     << endl;
-
-			cout << this->x << " l: " << this->lt->pp() << endl;
-			cout << (bool) (this->lt) << endl;
-
-			cout << this->x << " ll: " << endl;
-			cout << (bool) (this->left()->left()) << endl;
-			cout << this->left()->left()->pp() << endl;
-
-			cout << this->x << " lr: " << this->left()->right()->pp() 
-			     << endl;
-			cout << (bool) (this->left()->rt) << endl;
-			*/
-			assert (!this->left()->empty());
-			// assert (!this->right()->empty()); it could be empty!
-			/*
- 			 * TODO: Think of why this assert doesn't hold, seems to 
- 			 * me like it should...
-			assert (abs(this->left()->right()->height() 
-				  - this->left()->left()->height()) < 2);
-			*/
-
-			this->h = max ( this->left()->right()->height()	
-				      , this->right()->height()) + 1;
-
-
-			// T v = this->lt->value();
-
-			/*
-			   this          l 
-			   / \          / \
-			  l   r  -->   ll this
-			 / \              / \
-			ll  lr           lr  r
-			*/
-
-			// 'this' will be deallocated so make sure it doesn't
-			// hold anything
-			AVLTree<T> *l = this->release_left();
-			AVLTree<T> *r = this->release_right();
-			assert (this->lt->empty());
-			assert (this->rt->empty());
-
-			AVLTree<T> *lr = l->release_right();
-
-			assert (this->left()->empty());
-			assert (this->lt->empty());
-
-			// assert (l->rt->empty());
-			assert (l->right()->empty());
-
-			// l->lt = unique_ptr<AVLTree<T> >(ll);
-			// Maybe here we can't access/overwrite l->rt, because
-			// we're not its owner?
-			l->replace_right (new AVLNode<T>(lr, r, this->x));
-
-			// assert (!l->rt->empty());
-			assert (!l->right()->empty());
-			cout << "ok" << endl;
-			
-			// cout << "Returning: " << l->pp() << endl;
-
-			// this->lt = unique_ptr<AVLTree<T> >(lr);
-			// return unique_ptr<AVLTree<T> >(new AVLNode (ll, this, v));
-			// AVLTree<T> *l = this->lt.release();
-			// Make l the top child instead of me...
-			// I will be freed by the caller.
-			// return unique_ptr<AVLTree<T> >(l);
-
-			return l;
-		}
+		if (this->lt->height() > this->rt->height() + 1)
+			return this->rotate_right();
 	} else {
-		// x > this->x
-		insert_avl_type<T> r = this->rt->insert (x);
-		if (!r->empty()) {
-			cout << this->x << " right child reassign..." 
-			     << endl;
+		assert (x > this->x);
+		AVLTree<T> *r = this->rt->insert (x);
+		if (r != nullptr)
 			this->rt.reset(r);
-		} else
-			delete r;
+
 		// Are we heavy on the right side after the insertion?
-		if (this->rt->height() > this->lt->height() + 1) {
-			cout << this->x << " rotate right" << endl;
-			// Rotate by creating a copy...
-			this->h = max ( this->left()->height()
-				      , this->right()->left()->height()) + 1;
-
-
-			/*
- 			        this             r
-			        / \             / \
-			       l   r     -->  this rr
-			          / \         / \
-			         rl  rr      l  rl
- 			*/
-
-			AVLTree<T> *l = this->release_left();
-			AVLTree<T> *r = this->release_right();
-
-			AVLTree<T> *rl = r->release_left();
-
-			AVLTree<T> *newthis = new AVLNode<T>(l, rl, this->x);
-
-			r->replace_left(newthis);
-
-			// assert (!r->lt->empty());
-			assert (!r->left()->empty());
-
-			//assert (!r->left()->left()->empty());
-			//assert (!r->left()->right()->empty());
-			//assert (!r->right()->empty());
-
-			assert (newthis == r->left());
-			assert (newthis->value() == this->value());
-
-			assert (this->lt->empty());
-			assert (this->rt->empty());
-			
-			return r;
-		}
+		if (this->rt->height() > this->lt->height() + 1)
+			return this->rotate_left(); 
 	}
-
 	this->h = max (this->lt->height(), this->rt->height()) + 1;
 
-	return new AVLEmpty<T>();
+	return nullptr;
 }
 template <class T>
-insert_avl_type<T> AVLEmpty<T>::insert (T x) {
+AVLTree<T> *AVLEmpty<T>::insert (T x) {
 	AVLTree<T>::steps++;
-	return // unique_ptr<AVLTree<T> > (
-		new AVLNode<T>(new AVLEmpty(), new AVLEmpty(), x)
-	// )
-	;
+	return new AVLNode<T>(new AVLEmpty(), new AVLEmpty(), x);
+}
+
+template <class T>
+void avl_insert (unique_ptr<AVLTree<T> > *t, T x) {
+	AVLTree<T> *r = (*t)->insert (x);
+	if (r != nullptr) (*t).reset (r);
+}
+
+template <class T>
+void avl_remove (unique_ptr<AVLTree<T> > *t, T x) {
+	AVLTree<T> *r = (*t)->remove (x);
+	if (r != nullptr) (*t).reset (r);
 }
 
 #endif
