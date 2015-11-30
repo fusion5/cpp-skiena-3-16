@@ -53,6 +53,8 @@ class Balanced23Tree {
 		virtual Balanced23Tree<T>  *remove      (T x, 
 		  Balanced23Tree<T> **smaller_sibling, 
 		  Balanced23Tree<T> **larger_sibling      )    = 0;
+		virtual Balanced23Tree<T>  *add         (Balanced23Tree<T> *t,
+		  bool min) = 0;
 		static int steps;
 };
 
@@ -77,6 +79,8 @@ class BalancedNode2: public Balanced23Tree<T> {
 		Balanced23Tree<T>  *remove     (T x, 
 		  Balanced23Tree<T> **smaller_sibling, 
 		  Balanced23Tree<T> **larger_sibling);
+		Balanced23Tree<T>  *add        (Balanced23Tree<T> *t,
+		  bool min);
 	private:
 		T leftMax;
 		T middleMax;
@@ -103,6 +107,8 @@ class BalancedNode3: public Balanced23Tree<T> {
 		Balanced23Tree<T>  *remove     (T x, 
 		  Balanced23Tree<T> **smaller_sibling, 
 		  Balanced23Tree<T> **larger_sibling);
+		Balanced23Tree<T>  *add        (Balanced23Tree<T> *t,
+		  bool min);
 	private:
 		T leftMax;
 		T middleMax;
@@ -128,6 +134,8 @@ class BalancedLeaf: public Balanced23Tree<T> {
 		Balanced23Tree<T>  *remove     (T x, 
 		  Balanced23Tree<T> **smaller_sibling, 
 		  Balanced23Tree<T> **larger_sibling);
+		Balanced23Tree<T>  *add        (Balanced23Tree<T> *t,
+		  bool min);
 	private:
 		T x;
 };
@@ -149,6 +157,8 @@ class BalancedEmpty: public Balanced23Tree<T> {
 		Balanced23Tree<T>  *remove     (T x, 
 		  Balanced23Tree<T> **smaller_sibling, 
 		  Balanced23Tree<T> **larger_sibling);
+		Balanced23Tree<T>  *add        (Balanced23Tree<T> *t,
+		  bool min);
 };
 
 template <class T>
@@ -273,6 +283,33 @@ release_type<T> BalancedNode3<T>::release_min () {
 	return make_tuple (new BalancedNode2<T>(this->mt, this->rt), this->lt);
 }
 
+/*
+ * add: typically adds a sub-tree to the left of a 2-node to make it a 3-node
+ * or adds a sub-tree to the left of a leaf to make it a 2-node, etc...
+ * */
+template <class T>
+Balanced23Tree<T> *BalancedEmpty<T>::add (Balanced23Tree<T> *t, bool min) {
+	return t;
+}
+template <class T>
+Balanced23Tree<T> *BalancedLeaf<T>::add (Balanced23Tree<T> *t, bool min) {
+	if (min)
+		return new BalancedNode2<T> (t, this);
+	else // max
+		return new BalancedNode2<T> (this, t);
+}
+template <class T>
+Balanced23Tree<T> *BalancedNode2<T>::add (Balanced23Tree<T> *t, bool min) {
+	if (min)
+		return new BalancedNode3<T> (t, this->lt, this->mt);
+	else // max
+		return new BalancedNode3<T> (this->lt, this->mt, t);
+}
+template <class T>
+Balanced23Tree<T> *BalancedNode3<T>::add (Balanced23Tree<T> *t, bool min) {
+	assert (false); return nullptr;
+}
+
 /* release_max 
  *   returns: see release_type
  * */
@@ -349,7 +386,7 @@ T BalancedEmpty<T>::max() { throw "Cannot call max here"; }
  *           - a tree pointer if 'this' has to be replaced with the tree pointer
  * */
 template <class T>
-Balanced23Tree<T> *BalancedEmpty<T>::remove (T x, 
+Balanced23Tree<T> *BalancedEmpty<T>::remove (T x,
   Balanced23Tree<T> **small_sib, Balanced23Tree<T> **large_sib) {
 	assert (false);
 	Balanced23Tree<T>::steps++;
@@ -363,7 +400,7 @@ Balanced23Tree<T> **small_sib, Balanced23Tree<T> **large_sib) {
 	if (this->x == x) return new BalancedEmpty<T>();
 		// Don't change me, trying to remove a value that doesn't exist
 		return this; 
-	}
+}
 template <class T>
 Balanced23Tree<T> *BalancedNode2<T>::remove (T x,
 	Balanced23Tree<T> **small_sib, Balanced23Tree<T> **large_sib) {
@@ -374,87 +411,65 @@ Balanced23Tree<T> *BalancedNode2<T>::remove (T x,
 	if (x <= this->leftMax) {
 		Balanced23Tree<T> *lrem = this->lt->remove(x, nullptr, 
 		  &(this->mt));
-		// delete this->lt;
 		if (lrem->empty()) { // We need to remove lt and we are a 2-node
-			Balanced23Tree<T> *borrowed = 
-				borrow_from_sibling (small_sib, large_sib);
-			// if (borrowed == nullptr) return this->mt; // no borrow
-			if (borrowed == nullptr) {
-				// FIXME: Give mt to our existing sibling, 
-				// which is a
-				/*
+			// delete this->lt;
+			Balanced23Tree<T> *borrowed = borrow_from_sibling (
+			  small_sib, large_sib);
+			if (!borrowed) {
+				// If I could not borrow a subtree it is because 
+				// our sibling is a 2-node. I give mt to our 
+				// existing sibling, which is a 2-node, and 
+				// delete myself...
 				assert (small_sib || large_sib);
-				if (small_sib) {
-					Balanced23Tree<T> *sib_lt;
-					Balanced23Tree<T> *sib_mt;
-					if ((*small_sib)->leaf()) {
-						*small_sib = 
-						new BalancedNode2<T> (
-							(*small_sib)
-						, 	this->mt);
-					} else {
-					tie (sib_lt, sib_mt) =
-						(*small_sib)->release_max();
-					*small_sib = new BalancedNode3<T>(
-					  sib_lt, sib_mt, this->mt);
-					}
-				} else if (large_sib) {
-					Balanced23Tree<T> *sib_lt;
-					Balanced23Tree<T> *sib_mt;
-					if ((*large_sib)->leaf()) {
-					*large_sib = new BalancedNode2<T>(
-						this->mt, (*large_sib));
-					} else {
-					tie (sib_lt, sib_mt) =
-						(*large_sib)->release_max();
-					*large_sib = new BalancedNode3<T>(
-					  this->mt, sib_lt, sib_mt);
-					}
-				}
-				*/
-				// I need to be removed by my parent...
-				// return new BalancedEmpty<T>();
-				return this->mt;
+				if (small_sib)
+					*small_sib = (*small_sib)->add(
+					  this->mt, false);
+				else if (large_sib)
+					*large_sib = (*large_sib)->add(
+					  this->mt, true);
+				return new BalancedEmpty<T>();
 			}
 
-			T borrowedMax = borrowed->max();
-			if (borrowedMax < this->leftMax) {
-				// We borrowed from the smaller sibling
-				this->mt = this->lt;
-				this->middleMax = this->leftMax;
-
-				this->lt = borrowed;
-				this->leftMax = borrowedMax;
-
-			} else {
-				// We borrowed from the larger sibling...
-				this->lt = borrowed;
-			}
-			return this; 
+			assert (small_sib || large_sib);
+			if (small_sib) // Borrowed from the smaller sibling...
+				return new BalancedNode2 (borrowed, this->mt);
+			else           // Borrowed from the larger sibling...
+				return new BalancedNode2 (this->mt, borrowed);
 		}
-		if (lrem->leaf()) {
-			// I think
-		}
+		// delete this->lt;
 		this->lt = lrem;
+		this->leftMax = this->lt->max();
 
 	} else if (x <= this->middleMax) {
 		Balanced23Tree<T> *mrem = this->mt->remove(x, &(this->lt), 
 		  nullptr);
-		// if (!mrem) return nullptr;
-		// delete this->mt;
-		if (mrem->empty()) {
-			this->mt = borrow_from_sibling (small_sib, large_sib);
-			// FIXME: adjust as in the other case!
-			if (this->mt == nullptr) return this->lt;
-			// cout << "becoming lt..." << endl;
-			this->middleMax = this->mt->max();
-			return this;
+		// if (mrem != this->mt) delete this->mt;
+		if (mrem->empty()) { // Need to remove mt and become a 2-node
+			Balanced23Tree<T> *borrowed = borrow_from_sibling (
+			  small_sib, large_sib);
+			if (!borrowed) {
+				assert (small_sib || large_sib);
+				if (small_sib)
+					*small_sib = (*small_sib)->add(
+					  this->lt, false);
+				else if (large_sib)
+					*large_sib = (*large_sib)->add(
+					  this->lt, true);
+				return new BalancedEmpty<T>();
+			}
+			assert (small_sib || large_sib);
+			if (small_sib) // Borrowed from the smaller sibling...
+				return new BalancedNode2 (borrowed, this->lt);
+			else
+				return new BalancedNode2 (this->lt, borrowed);
 		}
+		// delete this->mt;
 		this->mt = mrem;
+		// TODO: Optimize remove() to return the new max for fewer steps?
+		this->middleMax = this->mt->max();
 	}
 	return this;
 }
-
 template <class T>
 Balanced23Tree<T> *BalancedNode3<T>::remove (T x, 
   Balanced23Tree<T> **small_sib, Balanced23Tree<T> **large_sib) {
@@ -466,6 +481,7 @@ Balanced23Tree<T> *BalancedNode3<T>::remove (T x,
 		if (lrem->empty())
 			return new BalancedNode2<T>(this->mt, this->rt);
 		this->lt = lrem;
+		this->leftMax = lrem->max();
 	} else if (x <= this->middleMax) {
 		Balanced23Tree<T> *mrem = this->mt->remove(x, &(this->lt), 
 		  &(this->rt));
@@ -474,6 +490,7 @@ Balanced23Tree<T> *BalancedNode3<T>::remove (T x,
 		if (mrem->empty())
 			return new BalancedNode2<T>(this->lt, this->rt);
 		this->mt = mrem;
+		this->middleMax = mrem->max();
 	} else {
 		Balanced23Tree<T> *rrem = this->rt->remove(x, &(this->mt), 
 		  nullptr);
