@@ -18,7 +18,6 @@
  */
 
 
-#include <iostream>
 #include <fstream>
 #include <boost/algorithm/string.hpp>
 
@@ -53,8 +52,8 @@ int main()
 	BinTree<string> *b = new Leaf<string>();
 	BinTree<string> *node;
 
-	Balanced23Tree<string> *bal_tree = new BalancedEmpty<string>();
-	Balanced23Tree<string> *bal_node;
+	Balanced23Tree<string> *bal_23_tree = new BalancedEmpty<string>();
+	Balanced23Tree<string> *bal_23_node;
 
 	unique_ptr<AVLTree<string> > avl_tree (new AVLEmpty<string>());
 	AVLTree<string> *avl_node;
@@ -75,7 +74,7 @@ int main()
 		m = l->find(word);
 		bool empty = m->empty();
 
-		// cout << word << " result empty? " << empty << endl;
+		cout << word << " result empty? " << empty << endl;
 
 		if (m->empty()) {
 			// cout << word << " inserting! " << endl;
@@ -97,22 +96,24 @@ int main()
 			return 0;
 		}
 		if (node->empty()) b = b->insert(word);
-
-		bal_node = bal_tree->find(word);
-		if (bal_node->empty() != test) {
-			cout << bal_tree->pp() << endl;
-			cout << "Could not find in the bal. tree the word: " 
-			     << word << endl;
-			return 0;
-		}
-		if (bal_node->empty())
-			bal_tree = balanced_23_tree_insert<string> (
-				bal_tree, word);
 		*/
+
+		bal_23_node = bal_23_tree->find(word);
+		assert (bal_23_node->empty() == empty);
+
+		if (bal_23_node->empty()) {
+			cout << "Insert: " << word << endl;
+			bal_23_tree = balanced_23_tree_insert<string> (
+			  bal_23_tree, word);
+		} else {
+			cout << "Remove: " << word << endl;
+			balanced_23_tree_remove<string> (&bal_23_tree, word);
+		}
+
+		cout << bal_23_tree->pp() << endl << endl;
 
 		avl_node = avl_tree->find(word);
 		assert (avl_node->empty() == empty);
-		
 		if (avl_node->empty()) {
 			// cout << "Insert: " << word << endl;
 			avl_insert (&avl_tree, word);
@@ -133,7 +134,7 @@ int main()
 
 	cout << l->pp()        << endl << endl;
 	cout << b->pp()        << endl << endl;
-	cout << bal_tree->pp() << endl << endl;
+	cout << bal_23_tree->pp() << endl << endl;
 	cout << avl_tree->pp() << endl << endl;
 
 	cout << "List steps: " << List<string>::steps << endl;
@@ -147,7 +148,7 @@ int main()
 	     << "; tree size: "
 	     << b->size()
 	     << "; balanced 2-3 tree size: "
-	     << bal_tree->size()
+	     << bal_23_tree->size()
 	     << "; AVL tree size: "
 	     << avl_tree->size()
 	     << ", height " << avl_tree->height()

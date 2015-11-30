@@ -26,6 +26,10 @@ template <class T>
 using insert_ret_type = tuple <Balanced23Tree<T>*, Balanced23Tree<T>*, T>;
 
 template <class T>
+using release_type = tuple <Balanced23Tree<T>*, Balanced23Tree<T>* >;
+//                          what I become       what I release
+
+template <class T>
 class Balanced23Tree {
 	public:
 		virtual Balanced23Tree<T> *find (T x) = 0;
@@ -39,16 +43,16 @@ class Balanced23Tree {
 		 **/
 		virtual insert_ret_type<T> insert       (T x) = 0;
 		virtual T                  max          ()    = 0;
-		virtual bool		   empty        ()    = 0;
-		virtual bool		   leaf         ()    = 0;
-		virtual string 		   pp           ()    = 0;
-		virtual int 		   size         ()    = 0;
-		virtual Balanced23Tree<T>  *release_min ()    = 0;
-		virtual Balanced23Tree<T>  *release_max ()    = 0;
-		virtual Balanced23Tree<T>  *remove      (T x
-		  , Balanced23Tree<T> *smaller_sibling
-		  , Balanced23Tree<T> *larger_sibling    )    = 0;
-
+		virtual bool               empty        ()    = 0;
+		virtual bool               leaf         ()    = 0;
+		virtual string             pp           ()    = 0;
+		virtual int                size         ()    = 0;
+		virtual bool               can_release  ()    = 0;
+		virtual release_type<T>    release_min  ()    = 0;
+		virtual release_type<T>    release_max  ()    = 0;
+		virtual Balanced23Tree<T>  *remove      (T x, 
+		  Balanced23Tree<T> **smaller_sibling, 
+		  Balanced23Tree<T> **larger_sibling      )    = 0;
 		static int steps;
 };
 
@@ -59,15 +63,20 @@ template <class T>
 class BalancedNode2: public Balanced23Tree<T> {
 	public:
 		BalancedNode2<T>   ( Balanced23Tree<T> *lt
-				   , Balanced23Tree<T> *mt );
+		                   , Balanced23Tree<T> *mt );
 		Balanced23Tree<T>  *find (T x);
 		insert_ret_type<T> insert (T x);
 		T                  max ();
-		bool		   empty ();
-		bool		   leaf ();
-		string		   pp ();
-		int		   size();
-		Balanced23Tree<T>  *release_min ();
+		bool               empty ();
+		bool               leaf ();
+		string             pp ();
+		int                size();
+		bool               can_release ();
+		release_type<T>    release_min ();
+		release_type<T>    release_max ();
+		Balanced23Tree<T>  *remove     (T x, 
+		  Balanced23Tree<T> **smaller_sibling, 
+		  Balanced23Tree<T> **larger_sibling);
 	private:
 		T leftMax;
 		T middleMax;
@@ -79,16 +88,21 @@ template <class T>
 class BalancedNode3: public Balanced23Tree<T> {
 	public:
 		BalancedNode3<T>   ( Balanced23Tree<T> *lt
-				   , Balanced23Tree<T> *mt
-				   , Balanced23Tree<T> *rt );
+		                   , Balanced23Tree<T> *mt
+		                   , Balanced23Tree<T> *rt );
 		Balanced23Tree<T>  *find (T x);
 		insert_ret_type<T> insert (T x);
 		T                  max ();
-		bool		   empty ();
-		bool 		   leaf ();
-		string		   pp ();
-	        int 		   size();
-		Balanced23Tree<T>  *release_min ();
+		bool               empty ();
+		bool               leaf ();
+		string             pp ();
+	        int                size();
+		bool               can_release ();
+		release_type<T>    release_min ();
+		release_type<T>    release_max ();
+		Balanced23Tree<T>  *remove     (T x, 
+		  Balanced23Tree<T> **smaller_sibling, 
+		  Balanced23Tree<T> **larger_sibling);
 	private:
 		T leftMax;
 		T middleMax;
@@ -104,11 +118,16 @@ class BalancedLeaf: public Balanced23Tree<T> {
 		Balanced23Tree<T>  *find (T x);
 		insert_ret_type<T> insert (T x);
 		T                  max ();
-		bool		   empty ();
-		bool		   leaf ();
-		string		   pp ();
-		int		   size ();
-		Balanced23Tree<T>  *release_min ();
+		bool               empty ();
+		bool               leaf ();
+		string             pp ();
+		int                size ();
+		bool               can_release ();
+		release_type<T>    release_min ();
+		release_type<T>    release_max ();
+		Balanced23Tree<T>  *remove     (T x, 
+		  Balanced23Tree<T> **smaller_sibling, 
+		  Balanced23Tree<T> **larger_sibling);
 	private:
 		T x;
 };
@@ -120,13 +139,42 @@ class BalancedEmpty: public Balanced23Tree<T> {
 		Balanced23Tree<T>  *find (T x);
 		insert_ret_type<T> insert (T x);
 		T                  max ();
-		bool		   empty ();
-		bool		   leaf ();
-		string		   pp ();
-		int		   size ();
-		Balanced23Tree<T>  *release_min ();
+		bool               empty ();
+		bool               leaf ();
+		string             pp ();
+		int                size ();
+		bool               can_release ();
+		release_type<T>    release_min ();
+		release_type<T>    release_max ();
+		Balanced23Tree<T>  *remove     (T x, 
+		  Balanced23Tree<T> **smaller_sibling, 
+		  Balanced23Tree<T> **larger_sibling);
 };
 
+template <class T>
+Balanced23Tree<T> *borrow_from_sibling (Balanced23Tree<T> **small_sib,
+  Balanced23Tree<T> **large_sib) {
+	if (small_sib && (*small_sib)->can_release()) {
+		// cout << "releasing from small sib" << endl;
+		Balanced23Tree<T> *new_sib;
+		Balanced23Tree<T> *released;
+		tie (new_sib, released) = (*small_sib)->release_max();
+		delete *small_sib;
+		*small_sib = new_sib;
+		return released;
+	}
+	if (large_sib && (*large_sib)->can_release()) {
+		// cout << "releasing from large sib" << endl;
+		Balanced23Tree<T> *new_sib;
+		Balanced23Tree<T> *released;
+		tie (new_sib, released) = (*large_sib)->release_min();
+		delete *large_sib;
+		*large_sib = new_sib;
+		return released;
+	}
+	cout << "nothing to borrow" << endl;
+	return nullptr;
+}
 // vanilla function that allows us to insert properly (it handles the tuple 
 // return value properly).
 template <class T>
@@ -134,14 +182,24 @@ Balanced23Tree<T> *balanced_23_tree_insert (Balanced23Tree<T> *t, T x) {
 	
 	Balanced23Tree<T> *li;
 	Balanced23Tree<T> *ri;
-
+	
 	tie (li, ri, ignore) = t->insert(x);
-
+	
 	if (ri->empty()) return li;
-
+	
 	// li and ri are 2-nodes. Make a new 2-node that holds them, which makes 
 	// the tree one level higher.
 	return new BalancedNode2<T> (li, ri);
+}
+
+template <class T>
+void balanced_23_tree_remove (Balanced23Tree<T> **t, T x) {
+	if ((*t)->empty()) return;
+	Balanced23Tree<T> *r = (*t)->remove(x, nullptr, nullptr);
+	if (r != (*t)) {
+		delete (*t);
+		*t = r;
+	}
 }
 
 /* constructors */
@@ -158,8 +216,8 @@ BalancedNode2<T>::BalancedNode2 (Balanced23Tree<T> *lt, Balanced23Tree<T> *mt) {
 }
 template <class T>
 BalancedNode3<T>::BalancedNode3 ( Balanced23Tree<T> *lt
-				, Balanced23Tree<T> *mt
-				, Balanced23Tree<T> *rt) {
+	                        , Balanced23Tree<T> *mt
+	                        , Balanced23Tree<T> *rt) {
 	this->leftMax   = lt->max();
 	this->middleMax = mt->max();
 	this->lt = lt;
@@ -173,11 +231,11 @@ template <class T> string BalancedLeaf <T>::pp() {
 	return "Leaf " + boost::lexical_cast<string>(this->x); }
 template <class T> string BalancedNode2<T>::pp() {
 	return "(Node2 " + this->lt->pp() + ", " 
-			 + this->mt->pp() + ")";  }
+	                 + this->mt->pp() + ")";  }
 template <class T> string BalancedNode3<T>::pp() {
 	return "(Node3 " + this->lt->pp() + ", " 
-			 + this->mt->pp() + ", " 
-			 + this->rt->pp() + ")";  }
+	                 + this->mt->pp() + ", " 
+	                 + this->rt->pp() + ")";  }
 
 /* size */
 template <class T> int BalancedEmpty<T>::size() { return 0; }
@@ -200,30 +258,46 @@ template <class T> bool BalancedNode2<T>::leaf() { return false; }
 template <class T> bool BalancedNode3<T>::leaf() { return false; }
 
 /* release_min 
- *   returns the node to replace oneself after the release
+ *   returns: see release_type
+ */
+template <class T>
+release_type<T> BalancedEmpty<T>::release_min () { assert(false); }
+template <class T>
+release_type<T> BalancedLeaf<T>::release_min ()  { assert(false); }
+template <class T>
+release_type<T> BalancedNode2<T>::release_min () { 
+	return make_tuple (this->mt, this->lt);
+}
+template <class T>
+release_type<T> BalancedNode3<T>::release_min () {
+	return make_tuple (new BalancedNode2<T>(this->mt, this->rt), this->lt);
+}
+
+/* release_max 
+ *   returns: see release_type
  * */
 template <class T>
-Balanced23Tree<T> *BalancedEmpty<T>::release_min () {
-	assert(false);
-	throw "error";
+release_type<T> BalancedEmpty<T>::release_max() { assert(false); }
+template <class T>
+release_type<T> BalancedLeaf<T>::release_max()  { assert(false); }
+template <class T>
+release_type<T> BalancedNode2<T>::release_max() { 
+	return make_tuple (this->lt, this->mt);
 }
-Balanced23Tree<T> *BalancedLeaf<T>::release_min () {
-	// release this, replace this with an empty tree...
-	return new BalancedEmpty<T>();
+template <class T>
+release_type<T> BalancedNode3<T>::release_max() {
+	return make_tuple(new BalancedNode2<T>(this->lt, this->mt), this->rt);
 }
-Balanced23Tree<T> *BalancedNode2<T>::release_min () {
-	if (lt->leaf()) {
-		assert(mt->leaf());
-		return this->mt;
-	}
 
-	Balanced23Tree<T> *ret;
-	ret = this->lt->release_min();
-
-	if (ret->leaf()) {
-		
-	}
-}
+/* can_release */
+template <class T>
+bool BalancedEmpty<T>::can_release () { return false; }
+template <class T>
+bool BalancedLeaf<T>::can_release() { return false; }
+template <class T>
+bool BalancedNode2<T>::can_release() { return false; }
+template <class T>
+bool BalancedNode3<T>::can_release() { return true; }
 
 /* find */
 template <class T>
@@ -241,14 +315,14 @@ template <class T>
 Balanced23Tree<T> *BalancedNode2<T>::find (T x) {
 	Balanced23Tree<T>::steps++;
 	if (x <= this->leftMax) return this->lt->find (x);
-	else 			return this->mt->find (x);
+	else                    return this->mt->find (x);
 }
 template <class T>
 Balanced23Tree<T> *BalancedNode3<T>::find (T x) {
 	Balanced23Tree<T>::steps++;
 	if (x <= this->leftMax)   return this->lt->find (x);
 	if (x <= this->middleMax) return this->mt->find (x);
-	else			  return this->rt->find (x);
+	else                      return this->rt->find (x);
 }
 
 /* max */
@@ -265,131 +339,151 @@ T BalancedNode3<T>::max() {
 template <class T>
 T BalancedLeaf<T>::max()  { 
 	Balanced23Tree<T>::steps++;
-	return this->x; }
+	return this->x; 
+}
 template <class T>
 T BalancedEmpty<T>::max() { throw "Cannot call max here"; }
 
 /* remove 
  *   returns - nullptr if 'this' doesn't have to be replaced with anything
- *           - a tree pointer if 'this' has to be replaced with something
+ *           - a tree pointer if 'this' has to be replaced with the tree pointer
  * */
 template <class T>
-void BalancedEmpty<T>::remove (T x, Balanced23<T> *siblings[]) {
+Balanced23Tree<T> *BalancedEmpty<T>::remove (T x, 
+  Balanced23Tree<T> **small_sib, Balanced23Tree<T> **large_sib) {
+	assert (false);
 	Balanced23Tree<T>::steps++;
-	return nullptr;
+	return this;
 }
 template <class T>
-BalancedTree<T> *BalancedLeaf<T>::remove (T x, Balanced23<T> *siblings[]) {
-	if (this->x == x) {
-		// It means replace myself with an empty node...
-		// TODO: If I do this, does c++ deallocate the new object?
-		return new BalancedEmpty<T>();
+Balanced23Tree<T> *BalancedLeaf<T>::remove (T x, 
+Balanced23Tree<T> **small_sib, Balanced23Tree<T> **large_sib) {
+	assert (!small_sib || (*small_sib)->leaf());
+	assert (!large_sib || (*large_sib)->leaf());
+	if (this->x == x) return new BalancedEmpty<T>();
+		// Don't change me, trying to remove a value that doesn't exist
+		return this; 
 	}
-	return nullptr; // Don't change me, trying to remove a value that doesn't
-	                // exist
-}
 template <class T>
-BalancedTree<T> *BalancedNode2<T>::remove (T x,
-  Balanced23Tree<T> *small_sib, Balanced23Tree<T> *large_sib) {
+Balanced23Tree<T> *BalancedNode2<T>::remove (T x,
+	Balanced23Tree<T> **small_sib, Balanced23Tree<T> **large_sib) {
 
- 	if (this->lt->leaf() && this->mt->leaf()) {
-		if (this->lt->remove(x, nullptr, this->mt)->empty()) {
-			delete this->lt;
-			return this->mt;
-		}
-		if (this->mt->remove(x, this->lt, nullptr)->empty()) {
-			delete this->mt;
-			return this->lt;
-		}
-  	}
+	assert (!(this->lt->empty()));
+	assert (!(this->mt->empty()));
 
 	if (x <= this->leftMax) {
-		Balanced23Tree<T> *lrem = this->lt->remove(x, nullptr, this->mt);
-		if (lrem == nullptr) return nullptr;
-
+		Balanced23Tree<T> *lrem = this->lt->remove(x, nullptr, 
+		  &(this->mt));
+		// delete this->lt;
 		if (lrem->empty()) { // We need to remove lt and we are a 2-node
-			delete this->lt;
+			Balanced23Tree<T> *borrowed = 
+				borrow_from_sibling (small_sib, large_sib);
+			// if (borrowed == nullptr) return this->mt; // no borrow
+			if (borrowed == nullptr) {
+				// FIXME: Give mt to our existing sibling, 
+				// which is a
+				/*
+				assert (small_sib || large_sib);
+				if (small_sib) {
+					Balanced23Tree<T> *sib_lt;
+					Balanced23Tree<T> *sib_mt;
+					if ((*small_sib)->leaf()) {
+						*small_sib = 
+						new BalancedNode2<T> (
+							(*small_sib)
+						, 	this->mt);
+					} else {
+					tie (sib_lt, sib_mt) =
+						(*small_sib)->release_max();
+					*small_sib = new BalancedNode3<T>(
+					  sib_lt, sib_mt, this->mt);
+					}
+				} else if (large_sib) {
+					Balanced23Tree<T> *sib_lt;
+					Balanced23Tree<T> *sib_mt;
+					if ((*large_sib)->leaf()) {
+					*large_sib = new BalancedNode2<T>(
+						this->mt, (*large_sib));
+					} else {
+					tie (sib_lt, sib_mt) =
+						(*large_sib)->release_max();
+					*large_sib = new BalancedNode3<T>(
+					  this->mt, sib_lt, sib_mt);
+					}
+				}
+				*/
+				// I need to be removed by my parent...
+				// return new BalancedEmpty<T>();
+				return this->mt;
+			}
 
-			// First we need to try to borrow from a sibling
-			if ((small_sib != nullptr) && 
-			    (small_sib->nchildren() == 3))
-				this->lt = 
-			return this->mt;
-		}
-	
-		this->lt = lrem;
-		return nullptr;
-	} else if (x <= this->middleMax) {
-		Balanced23Tree<T> *mrem = this->mt->remove(x, this->lt, nullptr);
-		if (mrem == nullptr) return nullptr;
+			T borrowedMax = borrowed->max();
+			if (borrowedMax < this->leftMax) {
+				// We borrowed from the smaller sibling
+				this->mt = this->lt;
+				this->middleMax = this->leftMax;
 
-		if (mrem->empty()) {
-			delete this->mt;
-			return this->lt;
-		}
-		
-		this->mt = mrem;
-	}
-}
+				this->lt = borrowed;
+				this->leftMax = borrowedMax;
 
-template <class T>
-BalancedTree<T> *BalancedNode3<T>::remove (T x, 
-  Balanced23Tree<T> *small_sib, Balanced23Tree<T> *large_sib) {
-
-	if (this->lt->leaf() && this->mt->leaf() && this->rt->leaf()) {
-		if (this->lt->remove(x)->empty()) {
-			delete this->lt;
-			return new BalancedNode2 (this->mt, this->rt);
-		} else if (this->mt->remove(x)->empty()) {
-			delete this->mt;
-			return new BalancedNode2 (this->lt, this->rt);
-		} else if (this->rt->remove(x)->empty()) {
-			delete this->rt;
-			return new BalancedNode2 (this->lt, this->mt);
-		}
-		return this; // removing a value that doesn't exist
-	}
-
-	if (x <= this->leftMax) {
-		Balanced23Tree<T> *lrem = this->lt->remove(x, null, this->mt);
-		/*
-		if (lrem->empty()) {
-			delete this->lt;
-			return new BalancedNode2 (this->mt, this->rt);
+			} else {
+				// We borrowed from the larger sibling...
+				this->lt = borrowed;
+			}
+			return this; 
 		}
 		if (lrem->leaf()) {
-			// The left subtree has become a leaf, but our other
-			// subtrees are not. Therefore, we rebalance.
-			assert (!(this->mt->leaf()));
-			assert (!(this->rt->leaf()));
-			// Take the minimum from mt and put it in the 
-			// left sub-tree. This might make mt into a leaf itself...
-
-			Balanced23Tree<T> *min_m = this->mt->release_min();
-
-			this->lt = new BalancedNode2 (lrem, min_m);
-
-			if (!this->mt->leaf()) return this; // we're ok
-
-			Balanced23Tree<T> *min_r  = this->rt->release_min();
-			Balanced23Tree<T> *old_mt = this->mt; // old middle leaf
-
-			this->mt = new BalancedNode2 (old_mt, min_r);
-
-			if (!this->rt->leaf()) return this; // we're ok
-
-			// Reduce this into a 2-node...
-			return new BalancedNode2 (
-			  this->lt, new BalancedNode3 (old_mt, min_r, this->rt));
+			// I think
 		}
-		return this; // we're ok
-		*/
+		this->lt = lrem;
+
 	} else if (x <= this->middleMax) {
-		Balanced23Tree<T> *mrem = this->mt->remove(x);
-		// We do the same kind of dancing and jumping around...
-	} else {
-		Balanced23Tree<T> *rrem = this->rt->remove(x);
+		Balanced23Tree<T> *mrem = this->mt->remove(x, &(this->lt), 
+		  nullptr);
+		// if (!mrem) return nullptr;
+		// delete this->mt;
+		if (mrem->empty()) {
+			this->mt = borrow_from_sibling (small_sib, large_sib);
+			// FIXME: adjust as in the other case!
+			if (this->mt == nullptr) return this->lt;
+			// cout << "becoming lt..." << endl;
+			this->middleMax = this->mt->max();
+			return this;
+		}
+		this->mt = mrem;
 	}
+	return this;
+}
+
+template <class T>
+Balanced23Tree<T> *BalancedNode3<T>::remove (T x, 
+  Balanced23Tree<T> **small_sib, Balanced23Tree<T> **large_sib) {
+	if (x <= this->leftMax) {
+		Balanced23Tree<T> *lrem = this->lt->remove(x, nullptr, 
+		  &(this->mt));
+		// if (!lrem) return nullptr;
+		// delete this->lt;
+		if (lrem->empty())
+			return new BalancedNode2<T>(this->mt, this->rt);
+		this->lt = lrem;
+	} else if (x <= this->middleMax) {
+		Balanced23Tree<T> *mrem = this->mt->remove(x, &(this->lt), 
+		  &(this->rt));
+		// if (!mrem) return nullptr;
+		// delete this->mt;
+		if (mrem->empty())
+			return new BalancedNode2<T>(this->lt, this->rt);
+		this->mt = mrem;
+	} else {
+		Balanced23Tree<T> *rrem = this->rt->remove(x, &(this->mt), 
+		  nullptr);
+		// if (!rrem) return nullptr;
+		// delete this->rt;
+		if (rrem->empty())
+			return new BalancedNode2<T>(this->lt, this->mt);
+		this->rt = rrem;
+	}
+	return this;
 }
 
 /* insert */
@@ -441,8 +535,8 @@ insert_ret_type<T> BalancedNode2<T>::insert (T x) {
 
 	Balanced23Tree<T> *li; // Left insert result
 	Balanced23Tree<T> *ri; // Right insert result (often a BalancedEmpty 
-			       // value)
-	T		  max; // The maximum of both li and ri
+	// value)
+	T                 max; // The maximum of both li and ri
 
 	if (x <= this->leftMax) {
 		tie (li, ri, max) = this->lt->insert (x);
@@ -450,13 +544,13 @@ insert_ret_type<T> BalancedNode2<T>::insert (T x) {
 			// I remain a 2-node
 			this->lt = li;
 			return make_tuple (
-				  this, new BalancedEmpty<T>, this->middleMax);
+					this, new BalancedEmpty<T>, this->middleMax);
 		} else {
 			// I become a 3 node!
 			return make_tuple (
-				  new BalancedNode3<T> (li, ri, this->mt)
-				, new BalancedEmpty<T>
-				, this->middleMax);
+					new BalancedNode3<T> (li, ri, this->mt)
+					, new BalancedEmpty<T>
+					, this->middleMax);
 		}
 	} else {
 		tie (li, ri, max) = this->mt->insert (x);
@@ -465,15 +559,15 @@ insert_ret_type<T> BalancedNode2<T>::insert (T x) {
 			this->mt = li;
 			this->middleMax = max;
 			return make_tuple (
-				  this
-				, new BalancedEmpty<T>()
-				, this->middleMax);
+					this
+					, new BalancedEmpty<T>()
+					, this->middleMax);
 		} else {
 			// I become a 3-node!
 			return make_tuple (
-				  new BalancedNode3<T> (this->lt, li, ri)
-				, new BalancedEmpty<T> ()
-				, max);
+					new BalancedNode3<T> (this->lt, li, ri)
+					, new BalancedEmpty<T> ()
+					, max);
 		}
 	}
 }
@@ -515,7 +609,7 @@ insert_ret_type<T> BalancedNode3<T>::insert(T x) {
 
 	Balanced23Tree<T> *li; // Left insert result
 	Balanced23Tree<T> *ri; // Right insert result
-	T		  max; // The maximum of both li and ri
+	T                 max; // The maximum of both li and ri
 
 	if (x <= this->leftMax) {
 		tie (li, ri, max) = this->lt->insert(x);
@@ -523,50 +617,48 @@ insert_ret_type<T> BalancedNode3<T>::insert(T x) {
 			// I remain a 3-node
 			this->lt = li;
 			return 	make_tuple (
-				  this
-				, new BalancedEmpty<T> ()
-				, this->rt->max());
+					this
+					, new BalancedEmpty<T> ()
+					, this->rt->max());
 		} else {
 			// I split into 2 2-nodes, because our lt has split in 2
 			// 1st case
 			return 	make_tuple (
-				  new BalancedNode2<T> (li, ri)
-				, new BalancedNode2<T> (this->mt, this->rt)
-				, this->rt->max());
+					new BalancedNode2<T> (li, ri)
+					, new BalancedNode2<T> (this->mt, this->rt)
+					, this->rt->max());
 		}
 	} else if (x <= this->middleMax) {
 		tie (li, ri, max) = this->mt->insert(x);
 		if (ri->empty()) {
 			this->mt = li;
 			return  make_tuple (
-				  this
-				, new BalancedEmpty<T>()
-				, this->rt->max()); 
+					this
+					, new BalancedEmpty<T>()
+					, this->rt->max()); 
 		} else {
 			// I split into 2 2-nodes, 2nd case
 			return  make_tuple (
-				  new BalancedNode2<T> (this->lt, li)
-				, new BalancedNode2<T> (ri, this->rt)
-				, this->rt->max());
-				
+					new BalancedNode2<T> (this->lt, li)
+					, new BalancedNode2<T> (ri, this->rt)
+					, this->rt->max());
+
 		}
 	} else {
 		tie (li, ri, max) = this->rt->insert(x);
 		if (ri->empty()) {
 			this->rt = li;
 			return make_tuple (
-				  this
-				, new BalancedEmpty<T>()
-				, max);
+					this
+					, new BalancedEmpty<T>()
+					, max);
 		} else {
 			// I split into 2 2-nodes again, 3rd case
-			return make_tuple (
-				  new BalancedNode2<T> (this->lt, this->mt)
-				, new BalancedNode2<T> (li, ri)
-				, max);
-
+			return make_tuple(
+					new BalancedNode2<T> (this->lt, this->mt), 
+					new BalancedNode2<T> (li, ri), 
+					max);
 		}
 	}
 }
-
 #endif

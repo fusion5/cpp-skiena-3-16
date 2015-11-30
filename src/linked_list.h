@@ -20,7 +20,7 @@ template <class T>
 class List {
 	public:
 		static  int steps;
-	   	virtual List<T> *find       (T x) = 0; 
+		virtual List<T> *find       (T x) = 0; 
 		virtual List<T> *insert     (T x) = 0;
 		virtual List<T> *remove     (T x) = 0;
 		virtual List<T> *release_xs ()    = 0;
