@@ -20,11 +20,18 @@
 
 #include <fstream>
 #include <boost/algorithm/string.hpp>
+// #include <sys/time.h>
+// #include <sys/resource.h>
 
 #include "linked_list.h"
 #include "bin_tree.h"
 #include "balanced_23_tree.h"
 #include "balanced_avl_tree.h"
+
+#define TEST_LIST
+// #define TEST_BIN
+// #define TEST_23
+// #define TEST_AVL
 
 using namespace std;
 
@@ -42,7 +49,7 @@ int main()
 	
 	ifstream *f;
 	f = new ifstream();
-	f->open("pg1342.txt");
+	f->open("pg1342.txt.full");
 
 	string word;
 
@@ -60,7 +67,7 @@ int main()
 
 	int i = 0;
 
-	while (f->good() && (i < 5000)) {
+	while (f->good() && (i < 500000)) {
 		
 		*f >> word;
 		boost::algorithm::to_lower(word);
@@ -71,71 +78,81 @@ int main()
 		// cout << avl_tree->pp() << endl;
 		// cout << l->pp() << endl;
 
-		m = l->find(word);
-		bool empty = m->empty();
+		#ifdef TEST_LIST
+			m = l->find(word);
+			bool empty = m->empty();
 
-		cout << word << " result empty? " << empty << endl;
+			// cout << word << " result empty? " << empty << endl;
 
-		if (m->empty()) {
-			// cout << word << " inserting! " << endl;
-			// int os = l->size();
-			list_insert (&l, word);
-			// assert(l->size() == (os + 1));
-		} else {
-			// cout << word << " removing! " << endl;
-			// int os = l->size();
-			list_remove (&l, word);
-			// assert(l->size() == (os - 1));
-		}
+			if (m->empty()) {
+				// cout << word << " inserting! " << endl;
+				// int os = l->size();
+				list_insert (&l, word);
+				// assert(l->size() == (os + 1));
+			} else {
+				// cout << word << " removing! " << endl;
+				// int os = l->size();
+				list_remove (&l, word);
+				// assert(l->size() == (os - 1));
+			}
+		#endif
 
-		/*
-		node = b->find(word);
-		if (node->empty() != test) {
-			cout << "Could not find in the bin. tree the word: " 
-			     << word;
-			return 0;
-		}
-		if (node->empty()) b = b->insert(word);
-		*/
+		#ifdef TEST_BIN
+			node = b->find(word);
+			assert (node->empty() == empty);
+			#ifdef TEST_LIST
+			if (node->empty()) b = b->insert(word);
+			#endif
+		#endif
 
-		bal_23_node = bal_23_tree->find(word);
-		assert (bal_23_node->empty() == empty);
+		#ifdef TEST_23
+			bal_23_node = bal_23_tree->find(word);
+			#ifdef TEST_LIST
+			assert (bal_23_node->empty() == empty);
+			#endif
 
-		if (bal_23_node->empty()) {
-			cout << "Insert: " << word << endl;
-			bal_23_tree = balanced_23_tree_insert<string> (
-			  bal_23_tree, word);
-		} else {
-			cout << "Remove: " << word << endl;
-			balanced_23_tree_remove<string> (&bal_23_tree, word);
-		}
+			if (bal_23_node->empty()) {
+				// cout << "Insert: " << word << endl;
+				bal_23_tree = balanced_23_tree_insert<string> (
+				  bal_23_tree, word);
+			} else {
+				// cout << "Remove: " << word << endl;
+				balanced_23_tree_remove<string> (&bal_23_tree, 
+				  word);
+			}
+			// cout << bal_23_tree->pp() << endl << endl;
+		#endif
 
-		cout << bal_23_tree->pp() << endl << endl;
-
-		avl_node = avl_tree->find(word);
-		assert (avl_node->empty() == empty);
-		if (avl_node->empty()) {
-			// cout << "Insert: " << word << endl;
-			avl_insert (&avl_tree, word);
-			// cout << avl_tree->pp() << endl;
-		} else {
-			// int os = avl_tree->size();
-			// cout << "Delete: " << word << endl;
-			// cout << avl_tree->pp() << endl;
-			avl_remove (&avl_tree, word);
-			// cout << avl_tree->pp() << endl;
-			// cout << avl_tree->size() << " " << os << endl;
-			// assert(avl_tree->size() == (os - 1));
-		}
+		#ifdef TEST_AVL
+			avl_node = avl_tree->find(word);
+			#ifdef TEST_LIST
+				assert (avl_node->empty() == empty);
+			#endif
+			if (avl_node->empty()) {
+				// cout << "Insert: " << word << endl;
+				avl_insert (&avl_tree, word);
+				// cout << avl_tree->pp() << endl;
+			} else {
+				// int os = avl_tree->size();
+				// cout << "Delete: " << word << endl;
+				// cout << avl_tree->pp() << endl;
+				avl_remove (&avl_tree, word);
+				// cout << avl_tree->pp() << endl;
+				// cout << avl_tree->size() << " " << os << endl;
+				// assert(avl_tree->size() == (os - 1));
+			}
+		#endif
 		i++;
 	}
 
-	assert (avl_tree->size() == l->size());
+//	assert (avl_tree->size() == l->size());
 
+/*
 	cout << l->pp()        << endl << endl;
 	cout << b->pp()        << endl << endl;
 	cout << bal_23_tree->pp() << endl << endl;
 	cout << avl_tree->pp() << endl << endl;
+*/
 
 	cout << "List steps: " << List<string>::steps << endl;
 	cout << "BinTree steps: " << BinTree<string>::steps << endl;

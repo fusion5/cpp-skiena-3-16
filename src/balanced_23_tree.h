@@ -47,14 +47,16 @@ class Balanced23Tree {
 		virtual bool               leaf         ()    = 0;
 		virtual string             pp           ()    = 0;
 		virtual int                size         ()    = 0;
+		virtual T                  value        ()    = 0;
 		virtual bool               can_release  ()    = 0;
 		virtual release_type<T>    release_min  ()    = 0;
 		virtual release_type<T>    release_max  ()    = 0;
-		virtual Balanced23Tree<T>  *remove      (T x, 
-		  Balanced23Tree<T> **smaller_sibling, 
-		  Balanced23Tree<T> **larger_sibling      )    = 0;
-		virtual Balanced23Tree<T>  *add         (Balanced23Tree<T> *t,
-		  bool min) = 0;
+		virtual bool               remove       (T x) = 0;
+		virtual Balanced23Tree<T>  *fill_gap    (Balanced23Tree<T> *t) 
+		                                              = 0;
+		virtual Balanced23Tree<T>  *release_lt  ()    = 0;
+		virtual Balanced23Tree<T>  *release_mt  ()    = 0;
+		virtual Balanced23Tree<T>  *release_rt  ()    = 0;
 		static int steps;
 };
 
@@ -73,19 +75,20 @@ class BalancedNode2: public Balanced23Tree<T> {
 		bool               leaf ();
 		string             pp ();
 		int                size();
+		T                  value       ();
 		bool               can_release ();
 		release_type<T>    release_min ();
 		release_type<T>    release_max ();
-		Balanced23Tree<T>  *remove     (T x, 
-		  Balanced23Tree<T> **smaller_sibling, 
-		  Balanced23Tree<T> **larger_sibling);
-		Balanced23Tree<T>  *add        (Balanced23Tree<T> *t,
-		  bool min);
+		bool               remove      (T x);
+		Balanced23Tree<T>  *fill_gap   (Balanced23Tree<T> *t);
+		Balanced23Tree<T>  *release_lt ();
+		Balanced23Tree<T>  *release_mt ();
+		Balanced23Tree<T>  *release_rt ();
 	private:
 		T leftMax;
 		T middleMax;
-		Balanced23Tree<T> *lt; // Left sub-tree
-		Balanced23Tree<T> *mt; // Middle sub-tree
+		Balanced23Tree<T>  *lt; // Left sub-tree
+		Balanced23Tree<T>  *mt; // Middle sub-tree
 };
 
 template <class T>
@@ -101,14 +104,15 @@ class BalancedNode3: public Balanced23Tree<T> {
 		bool               leaf ();
 		string             pp ();
 	        int                size();
+		T                  value       ();
 		bool               can_release ();
 		release_type<T>    release_min ();
 		release_type<T>    release_max ();
-		Balanced23Tree<T>  *remove     (T x, 
-		  Balanced23Tree<T> **smaller_sibling, 
-		  Balanced23Tree<T> **larger_sibling);
-		Balanced23Tree<T>  *add        (Balanced23Tree<T> *t,
-		  bool min);
+		bool               remove      (T x);
+		Balanced23Tree<T>  *fill_gap   (Balanced23Tree<T> *t);
+		Balanced23Tree<T>  *release_lt ();
+		Balanced23Tree<T>  *release_mt ();
+		Balanced23Tree<T>  *release_rt ();
 	private:
 		T leftMax;
 		T middleMax;
@@ -128,14 +132,16 @@ class BalancedLeaf: public Balanced23Tree<T> {
 		bool               leaf ();
 		string             pp ();
 		int                size ();
+		T                  value       ();
 		bool               can_release ();
 		release_type<T>    release_min ();
 		release_type<T>    release_max ();
-		Balanced23Tree<T>  *remove     (T x, 
-		  Balanced23Tree<T> **smaller_sibling, 
-		  Balanced23Tree<T> **larger_sibling);
-		Balanced23Tree<T>  *add        (Balanced23Tree<T> *t,
-		  bool min);
+		bool               remove      (T x);
+		Balanced23Tree<T>  *fill_gap   (Balanced23Tree<T> *t);
+		Balanced23Tree<T>  *release_lt ();
+		Balanced23Tree<T>  *release_mt ();
+		Balanced23Tree<T>  *release_rt ();
+
 	private:
 		T x;
 };
@@ -151,41 +157,120 @@ class BalancedEmpty: public Balanced23Tree<T> {
 		bool               leaf ();
 		string             pp ();
 		int                size ();
+		T                  value       ();
 		bool               can_release ();
 		release_type<T>    release_min ();
 		release_type<T>    release_max ();
-		Balanced23Tree<T>  *remove     (T x, 
-		  Balanced23Tree<T> **smaller_sibling, 
-		  Balanced23Tree<T> **larger_sibling);
-		Balanced23Tree<T>  *add        (Balanced23Tree<T> *t,
-		  bool min);
+		bool               remove      (T x);
+		Balanced23Tree<T>  *fill_gap   (Balanced23Tree<T> *t);
+		Balanced23Tree<T>  *release_lt ();
+		Balanced23Tree<T>  *release_mt ();
+		Balanced23Tree<T>  *release_rt ();
 };
 
 template <class T>
-Balanced23Tree<T> *borrow_from_sibling (Balanced23Tree<T> **small_sib,
+void borrow_from_small_to_large (Balanced23Tree<T> **small_sib, 
   Balanced23Tree<T> **large_sib) {
-	if (small_sib && (*small_sib)->can_release()) {
-		// cout << "releasing from small sib" << endl;
-		Balanced23Tree<T> *new_sib;
-		Balanced23Tree<T> *released;
-		tie (new_sib, released) = (*small_sib)->release_max();
-		delete *small_sib;
-		*small_sib = new_sib;
-		return released;
+	assert ((*small_sib)->can_release());
+	assert (!((*large_sib)->can_release()));
+	Balanced23Tree<T> *borrowed;
+	// Balanced23Tree<T> *new_small_sib;
+	tie (*small_sib, borrowed) = (*small_sib)->release_max();
+	if ((*large_sib)->leaf()) {
+		*large_sib = new BalancedNode2<T>(borrowed, *large_sib);
+	} else {
+		Balanced23Tree<T> *lslt;
+		Balanced23Tree<T> *lsrt;
+		tie (lslt, lsrt) = (*large_sib)->release_max();
+		*large_sib = new BalancedNode3<T>(borrowed, lslt, lsrt);
 	}
-	if (large_sib && (*large_sib)->can_release()) {
-		// cout << "releasing from large sib" << endl;
-		Balanced23Tree<T> *new_sib;
-		Balanced23Tree<T> *released;
-		tie (new_sib, released) = (*large_sib)->release_min();
-		delete *large_sib;
-		*large_sib = new_sib;
-		return released;
-	}
-	cout << "nothing to borrow" << endl;
-	return nullptr;
+	assert (!((*small_sib)->can_release()));
+	assert (!((*small_sib)->leaf()));
+	assert (!((*large_sib)->leaf()));
 }
-// vanilla function that allows us to insert properly (it handles the tuple 
+template <class T>
+void borrow_from_large_to_small (Balanced23Tree<T> **large_sib,
+  Balanced23Tree<T> **small_sib) {
+	assert (!((*small_sib)->can_release()));
+	assert ((*large_sib)->can_release());
+	Balanced23Tree<T> *borrowed;
+	// Balanced23Tree<T> *new_large_sib;
+	tie (*large_sib, borrowed) = (*large_sib)->release_min();
+	if ((*small_sib)->leaf()) {
+		*small_sib = new BalancedNode2<T>(*small_sib, borrowed);
+	} else {
+		Balanced23Tree<T> *sslt;
+		Balanced23Tree<T> *ssrt;
+		tie (sslt, ssrt) = (*small_sib)->release_max();
+		*small_sib = new BalancedNode3<T>(sslt, ssrt, borrowed);
+	}
+	assert (!((*large_sib)->can_release()));
+	assert (!((*small_sib)->leaf()));
+	assert (!((*large_sib)->leaf()));
+}
+
+template <class T>
+Balanced23Tree<T> *reduce_3node (Balanced23Tree<T> *t) {
+	Balanced23Tree<T> *new_t;
+	Balanced23Tree<T> *released;
+	tie (new_t, released) = t->release_min();
+	assert (released->empty());
+	return new_t;
+}
+
+template <class T>
+Balanced23Tree<T> *merge_with_smaller (Balanced23Tree<T> *large, 
+  Balanced23Tree<T> *small) {
+	assert (!(small->can_release()));
+	assert (!(large->can_release()));
+	assert (!(small->leaf()));
+	assert (!(large->leaf()));
+	assert (!(small->empty()));
+	assert (!(large->empty()));
+
+	Balanced23Tree<T> *llt;
+	Balanced23Tree<T> *lrt;
+	tie (llt, lrt) = large->release_max();
+
+	Balanced23Tree<T> *slt;
+	Balanced23Tree<T> *srt;
+	tie (slt, srt) = small->release_max();
+
+	assert (llt->empty() || lrt->empty());
+
+	if (llt->empty()) return new BalancedNode3<T> (slt, srt, lrt);
+	else              return new BalancedNode3<T> (slt, srt, llt);
+}
+
+/*
+ * The two parameters are 2-nodes.
+ * The small tree must have a gap. We put the 2 large nodes in the gap...
+ * */
+template <class T>
+Balanced23Tree<T> *merge_with_larger (Balanced23Tree<T> *small, 
+  Balanced23Tree<T> *large) {
+	assert (!(small->can_release()));
+	assert (!(large->can_release()));
+	assert (!(small->leaf()));
+	assert (!(large->leaf()));
+	assert (!(small->empty()));
+	assert (!(large->empty()));
+
+	Balanced23Tree<T> *slt;
+	Balanced23Tree<T> *srt;
+	tie (slt, srt) = small->release_max();
+
+	Balanced23Tree<T> *llt;
+	Balanced23Tree<T> *lrt;
+	tie (llt, lrt) = large->release_max();
+
+	assert (slt->empty() || srt->empty());
+
+	if (slt->empty()) return new BalancedNode3<T> (srt, llt, lrt);
+	else              return new BalancedNode3<T> (slt, llt, lrt);
+}
+
+// vanilla function that allows us to insert (it handles the tuple 
 // return value properly).
 template <class T>
 Balanced23Tree<T> *balanced_23_tree_insert (Balanced23Tree<T> *t, T x) {
@@ -205,11 +290,35 @@ Balanced23Tree<T> *balanced_23_tree_insert (Balanced23Tree<T> *t, T x) {
 template <class T>
 void balanced_23_tree_remove (Balanced23Tree<T> **t, T x) {
 	if ((*t)->empty()) return;
+
+	if ((*t)->leaf()) {
+		if ((*t)->value() == x)
+			*t = new BalancedEmpty<T>();
+		return;
+	}
+
+	bool gap = (*t)->remove(x);
+	
+	if (!gap) return;
+	
+	if ((*t)->can_release()) {
+		*t = reduce_3node (*t);
+		return;
+	}
+
+	// t is a 2-node with a gap. we make the non-gap node the new root!
+	Balanced23Tree<T> *lt;
+	Balanced23Tree<T> *mt;
+	tie (lt, mt) = (*t)->release_min();
+	if (lt->empty()) *t = mt;
+	else             *t = lt;
+/*
 	Balanced23Tree<T> *r = (*t)->remove(x, nullptr, nullptr);
 	if (r != (*t)) {
 		delete (*t);
 		*t = r;
 	}
+*/
 }
 
 /* constructors */
@@ -250,10 +359,16 @@ template <class T> string BalancedNode3<T>::pp() {
 /* size */
 template <class T> int BalancedEmpty<T>::size() { return 0; }
 template <class T> int BalancedLeaf <T>::size() { return 1; }
-template <class T> int BalancedNode2<T>::size() { 
+template <class T> int BalancedNode2<T>::size() {
 	return this->lt->size() + this->mt->size(); }
 template <class T> int BalancedNode3<T>::size() {
 	return this->lt->size() + this->mt->size() + this->rt->size(); }
+
+/* value */
+template <class T> T BalancedEmpty<T>::value() { assert (false); }
+template <class T> T BalancedLeaf<T> ::value() { return this->x; }
+template <class T> T BalancedNode2<T>::value() { assert (false); }
+template <class T> T BalancedNode3<T>::value() { assert (false); }
 
 /* empty */
 template <class T> bool BalancedEmpty<T>::empty() { return true;  }
@@ -267,6 +382,64 @@ template <class T> bool BalancedLeaf <T>::leaf() { return true; }
 template <class T> bool BalancedNode2<T>::leaf() { return false; }
 template <class T> bool BalancedNode3<T>::leaf() { return false; }
 
+
+template <class T> 
+release_type<T> *release_2node (Balanced23Tree<T> *t) {
+	assert (!(t->can_release()));
+	assert (!(t->is_leaf()));
+}
+
+/* Boilerplate code: release_lt... */
+template <class T>
+Balanced23Tree<T> *BalancedEmpty<T>::release_lt () { assert (false); }
+template <class T>
+Balanced23Tree<T> *BalancedLeaf<T>::release_lt  () { assert (false); }
+template <class T>
+Balanced23Tree<T> *BalancedNode2<T>::release_lt () {
+	Balanced23Tree<T> *t = this->lt;
+	this->lt = nullptr;
+	return t;
+}
+template <class T>
+Balanced23Tree<T> *BalancedNode3<T>::release_lt () {
+	Balanced23Tree<T> *t = this->lt;
+	this->lt = nullptr;
+	return t;
+}
+
+/* Boilerplate code: release_mt... */
+template <class T>
+Balanced23Tree<T> *BalancedEmpty<T>::release_mt () { assert (false); }
+template <class T> 
+Balanced23Tree<T> *BalancedLeaf<T>::release_mt ()  { assert (false); }
+template <class T>
+Balanced23Tree<T> *BalancedNode2<T>::release_mt () {
+	Balanced23Tree<T> *t = this->mt;
+	this->mt = nullptr;
+	return t;
+
+}
+template <class T>
+Balanced23Tree<T> *BalancedNode3<T>::release_mt () {
+	Balanced23Tree<T> *t = this->mt;
+	this->mt = nullptr;
+	return t;
+}
+
+/* Boilerplate code: release_rt... */
+template <class T>
+Balanced23Tree<T> *BalancedEmpty<T>::release_rt () { assert (false); }
+template <class T> 
+Balanced23Tree<T> *BalancedLeaf<T>::release_rt ()  { assert (false); }
+template <class T>
+Balanced23Tree<T> *BalancedNode2<T>::release_rt () { assert (false); }
+template <class T>
+Balanced23Tree<T> *BalancedNode3<T>::release_rt () {
+	Balanced23Tree<T> *t = this->rt;
+	this->rt = nullptr;
+	return t;
+}
+
 /* release_min 
  *   returns: see release_type
  */
@@ -276,37 +449,59 @@ template <class T>
 release_type<T> BalancedLeaf<T>::release_min ()  { assert(false); }
 template <class T>
 release_type<T> BalancedNode2<T>::release_min () { 
-	return make_tuple (this->mt, this->lt);
+	Balanced23Tree<T> *lt = this->lt;
+	Balanced23Tree<T> *mt = this->mt;
+	this->lt = nullptr;
+	this->mt = nullptr;
+	return make_tuple (mt, lt);
 }
 template <class T>
 release_type<T> BalancedNode3<T>::release_min () {
-	return make_tuple (new BalancedNode2<T>(this->mt, this->rt), this->lt);
+	Balanced23Tree<T> *lt = this->lt;
+	Balanced23Tree<T> *mt = this->mt;
+	Balanced23Tree<T> *rt = this->rt;
+
+	this->lt = nullptr;
+	this->mt = nullptr;
+	this->rt = nullptr;
+
+	return make_tuple (new BalancedNode2<T>(mt, rt), lt);
 }
 
 /*
- * add: typically adds a sub-tree to the left of a 2-node to make it a 3-node
- * or adds a sub-tree to the left of a leaf to make it a 2-node, etc...
+ * fill_gap
  * */
 template <class T>
-Balanced23Tree<T> *BalancedEmpty<T>::add (Balanced23Tree<T> *t, bool min) {
+Balanced23Tree<T> *BalancedEmpty<T>::fill_gap (Balanced23Tree<T> *t) {
 	return t;
 }
 template <class T>
-Balanced23Tree<T> *BalancedLeaf<T>::add (Balanced23Tree<T> *t, bool min) {
-	if (min)
-		return new BalancedNode2<T> (t, this);
-	else // max
-		return new BalancedNode2<T> (this, t);
+Balanced23Tree<T> *BalancedLeaf<T>::fill_gap (Balanced23Tree<T> *t) {
+	assert(false);
 }
 template <class T>
-Balanced23Tree<T> *BalancedNode2<T>::add (Balanced23Tree<T> *t, bool min) {
-	if (min)
-		return new BalancedNode3<T> (t, this->lt, this->mt);
-	else // max
-		return new BalancedNode3<T> (this->lt, this->mt, t);
+Balanced23Tree<T> *BalancedNode2<T>::fill_gap (Balanced23Tree<T> *t) {
+	assert (this->lt->empty() || this->mt->empty());
+	assert (!(this->lt->empty() && this->mt->empty()));
+
+	Balanced23Tree<T> *t2;
+
+	if (this->lt->empty()) t2 = this->mt;
+	else                   t2 = this->lt;
+
+	if (t->max() < t2->max()) {
+		this->lt = t; 
+		this->mt = t2;
+	} else {
+		this->lt = t2;
+		this->mt = t;
+	}
+	this->leftMax   = this->lt->max();
+	this->middleMax = this->mt->max();
+	return this;
 }
 template <class T>
-Balanced23Tree<T> *BalancedNode3<T>::add (Balanced23Tree<T> *t, bool min) {
+Balanced23Tree<T> *BalancedNode3<T>::fill_gap (Balanced23Tree<T> *t) {
 	assert (false); return nullptr;
 }
 
@@ -379,128 +574,200 @@ T BalancedLeaf<T>::max()  {
 	return this->x; 
 }
 template <class T>
-T BalancedEmpty<T>::max() { throw "Cannot call max here"; }
+T BalancedEmpty<T>::max() { assert(false); throw "Cannot call max here"; }
 
 /* remove 
- *   returns - nullptr if 'this' doesn't have to be replaced with anything
- *           - a tree pointer if 'this' has to be replaced with the tree pointer
+ *   returns - true if a gap was left after removal
+ *           - false otherwise
  * */
 template <class T>
-Balanced23Tree<T> *BalancedEmpty<T>::remove (T x,
-  Balanced23Tree<T> **small_sib, Balanced23Tree<T> **large_sib) {
+bool BalancedEmpty<T>::remove (T x) {
 	assert (false);
 	Balanced23Tree<T>::steps++;
-	return this;
+	return false;
 }
 template <class T>
-Balanced23Tree<T> *BalancedLeaf<T>::remove (T x, 
-Balanced23Tree<T> **small_sib, Balanced23Tree<T> **large_sib) {
-	assert (!small_sib || (*small_sib)->leaf());
-	assert (!large_sib || (*large_sib)->leaf());
-	if (this->x == x) return new BalancedEmpty<T>();
-		// Don't change me, trying to remove a value that doesn't exist
-		return this; 
+bool BalancedLeaf<T>::remove (T x) {
+	assert (false);
+	return false; 
 }
 template <class T>
-Balanced23Tree<T> *BalancedNode2<T>::remove (T x,
-	Balanced23Tree<T> **small_sib, Balanced23Tree<T> **large_sib) {
+bool BalancedNode2<T>::remove (T x) {
 
 	assert (!(this->lt->empty()));
 	assert (!(this->mt->empty()));
 
-	if (x <= this->leftMax) {
-		Balanced23Tree<T> *lrem = this->lt->remove(x, nullptr, 
-		  &(this->mt));
-		if (lrem->empty()) { // We need to remove lt and we are a 2-node
-			// delete this->lt;
-			Balanced23Tree<T> *borrowed = borrow_from_sibling (
-			  small_sib, large_sib);
-			if (!borrowed) {
-				// If I could not borrow a subtree it is because 
-				// our sibling is a 2-node. I give mt to our 
-				// existing sibling, which is a 2-node, and 
-				// delete myself...
-				assert (small_sib || large_sib);
-				if (small_sib)
-					*small_sib = (*small_sib)->add(
-					  this->mt, false);
-				else if (large_sib)
-					*large_sib = (*large_sib)->add(
-					  this->mt, true);
-				return new BalancedEmpty<T>();
-			}
-
-			assert (small_sib || large_sib);
-			if (small_sib) // Borrowed from the smaller sibling...
-				return new BalancedNode2 (borrowed, this->mt);
-			else           // Borrowed from the larger sibling...
-				return new BalancedNode2 (this->mt, borrowed);
+	if (this->lt->leaf() && this->mt->leaf()) {
+		if (this->lt->value() == x) {
+			delete this->lt;
+			this->lt = new BalancedEmpty<T>();
+			return true;
 		}
-		// delete this->lt;
-		this->lt = lrem;
-		this->leftMax = this->lt->max();
-
-	} else if (x <= this->middleMax) {
-		Balanced23Tree<T> *mrem = this->mt->remove(x, &(this->lt), 
-		  nullptr);
-		// if (mrem != this->mt) delete this->mt;
-		if (mrem->empty()) { // Need to remove mt and become a 2-node
-			Balanced23Tree<T> *borrowed = borrow_from_sibling (
-			  small_sib, large_sib);
-			if (!borrowed) {
-				assert (small_sib || large_sib);
-				if (small_sib)
-					*small_sib = (*small_sib)->add(
-					  this->lt, false);
-				else if (large_sib)
-					*large_sib = (*large_sib)->add(
-					  this->lt, true);
-				return new BalancedEmpty<T>();
-			}
-			assert (small_sib || large_sib);
-			if (small_sib) // Borrowed from the smaller sibling...
-				return new BalancedNode2 (borrowed, this->lt);
-			else
-				return new BalancedNode2 (this->lt, borrowed);
+		if (this->mt->value() == x) {
+			delete this->mt;
+			this->mt = this->release_lt();
+			this->lt = new BalancedEmpty<T>();
+			return true;
 		}
-		// delete this->mt;
-		this->mt = mrem;
-		// TODO: Optimize remove() to return the new max for fewer steps?
-		this->middleMax = this->mt->max();
+		return false;
 	}
-	return this;
+	assert (!(this->lt->leaf()));
+	assert (!(this->mt->leaf()));
+	if (x <= this->leftMax) {
+		if (!this->lt->remove(x)) return false;
+		if (this->lt->can_release()) {
+			tie (this->lt, ignore) = this->release_lt()->release_min();
+			return false;
+		}
+		if (this->mt->can_release()) {
+			// borrow_from_large_to_small (&(this->mt), gap);
+			Balanced23Tree<T> *borrow;
+			tie (this->mt, borrow) = this->release_mt()->release_min();
+
+			this->lt->fill_gap (borrow);
+			this->leftMax   = this->lt->max();
+			this->middleMax = this->mt->max();
+			return false;
+		}
+		// mt is a 2-node... and lt is a 2-node with a gap.
+		// we transform these two into a 3-node and a gap
+		this->mt        = merge_with_larger ( this->release_lt(), 
+		                                      this->release_mt());
+		this->lt        = new BalancedEmpty<T>();
+		this->middleMax = this->mt->max();
+		return true;
+	} else if (x <= this->middleMax) {
+		if (!this->mt->remove(x)) return false;
+		if (this->mt->can_release()) {
+			tie (this->mt, ignore) = this->release_mt()->release_min();
+			return false;
+		}
+		if (this->lt->can_release()) {
+			Balanced23Tree<T> *borrow;
+			tie (this->lt, borrow) = this->release_lt()->release_max();
+			this->mt->fill_gap (borrow);
+			this->leftMax   = this->lt->max();
+			this->middleMax = this->mt->max();
+			return false;
+		}
+		// mt is a 2-node... and lt is a 2-node with a gap.
+		// we transform these two into a 3-node and a gap
+		this->mt        = merge_with_smaller ( this->release_mt(), 
+		                                       this->release_lt());
+		this->lt        = new BalancedEmpty<T>();
+		this->middleMax = this->mt->max();
+		return true;
+	}
+	return false;
 }
 template <class T>
-Balanced23Tree<T> *BalancedNode3<T>::remove (T x, 
-  Balanced23Tree<T> **small_sib, Balanced23Tree<T> **large_sib) {
-	if (x <= this->leftMax) {
-		Balanced23Tree<T> *lrem = this->lt->remove(x, nullptr, 
-		  &(this->mt));
-		// if (!lrem) return nullptr;
-		// delete this->lt;
-		if (lrem->empty())
-			return new BalancedNode2<T>(this->mt, this->rt);
-		this->lt = lrem;
-		this->leftMax = lrem->max();
-	} else if (x <= this->middleMax) {
-		Balanced23Tree<T> *mrem = this->mt->remove(x, &(this->lt), 
-		  &(this->rt));
-		// if (!mrem) return nullptr;
-		// delete this->mt;
-		if (mrem->empty())
-			return new BalancedNode2<T>(this->lt, this->rt);
-		this->mt = mrem;
-		this->middleMax = mrem->max();
-	} else {
-		Balanced23Tree<T> *rrem = this->rt->remove(x, &(this->mt), 
-		  nullptr);
-		// if (!rrem) return nullptr;
-		// delete this->rt;
-		if (rrem->empty())
-			return new BalancedNode2<T>(this->lt, this->mt);
-		this->rt = rrem;
+bool BalancedNode3<T>::remove (T x) {
+
+	if (this->lt->leaf() && this->mt->leaf() && this->rt->leaf()) {
+		if (x == this->lt->value()) {
+			delete this->lt;
+			this->lt = new BalancedEmpty<T>();
+			return true;
+		}
+		else if (x == this->mt->value()) {
+			delete this->mt;
+			this->mt = this->release_lt();
+			this->lt = new BalancedEmpty<T>();
+			return true;
+		}
+		else if (x == this->rt->value()) {
+			delete this->rt;
+			this->rt = this->release_mt();
+			this->mt = this->release_lt();
+			this->lt = new BalancedEmpty<T>();
+			return true;
+		}
+		return false;
 	}
-	return this;
+
+	assert (!this->lt->leaf());
+	assert (!this->mt->leaf());
+	assert (!this->rt->leaf());
+
+	if (x <= this->leftMax) {
+		if (!this->lt->remove(x)) return false;
+
+		if (this->lt->can_release()) {
+			tie (this->lt, ignore) = this->release_lt()->release_min();
+			return false;
+		}
+		/*
+		if (this->rt->can_release() && !(this->mt->can_release()))
+			borrow_from_large_to_small (&(this->rt), &(this->mt));
+		*/
+		if (this->mt->can_release()) {
+			Balanced23Tree<T> *borrow;
+			tie (this->mt, borrow) = this->release_mt()->release_min();
+			this->lt->fill_gap (borrow);
+			this->leftMax = this->lt->max();
+			this->middleMax = this->mt->max();
+			return false;
+		}
+		// mt and rt are 2-nodes... and lt is a 2-node with a gap.
+		// Pass lt on to mt and leave a gap to the left...
+		this->mt = merge_with_larger (this->release_lt(), 
+		                              this->release_mt());
+		this->lt = new BalancedEmpty<T>();
+		this->middleMax = this->mt->max();
+		return true;
+	} else if (x <= this->middleMax) {
+		if (!this->mt->remove(x)) return false;
+		
+		if (this->mt->can_release()) {
+			tie (this->mt, ignore) = this->release_mt()->release_min();
+			return false;
+		}
+		if (this->rt->can_release()) {
+			Balanced23Tree<T> *borrow;
+			tie (this->rt, borrow) = this->release_rt()->release_min();
+			this->mt->fill_gap (borrow);
+			this->middleMax = this->mt->max();
+			return false;
+		} 
+		if (this->lt->can_release()) {
+			Balanced23Tree<T> *borrow;
+			tie (this->lt, borrow) = this->release_lt()->release_max();
+			this->mt->fill_gap (borrow);
+			this->middleMax = this->mt->max();
+			this->leftMax   = this->lt->max();
+			return false;
+		}
+		this->mt = merge_with_smaller (this->release_mt(), 
+		                               this->release_lt());
+		this->lt = new BalancedEmpty<T>();
+		this->middleMax = this->mt->max();
+		return true;
+	} else {
+		if (!this->rt->remove(x)) return false;
+
+		if (this->rt->can_release()) {
+			tie (this->rt, ignore) = this->release_rt()->release_min();
+			return false;
+		}
+		/*
+		if (this->lt->can_release() && !(this->mt->can_release()))
+			borrow_from_small_to_large (&(this->lt), &(this->mt));
+		*/
+		if (this->mt->can_release()) {
+			Balanced23Tree<T> *borrow;
+			tie (this->mt, borrow) = this->release_mt()->release_max();
+			this->rt->fill_gap (borrow);
+			this->leftMax   = this->lt->max();
+			this->middleMax = this->mt->max();
+			return false;
+		}
+		this->rt = merge_with_smaller (this->release_rt(), 
+		                               this->release_mt());
+		this->mt = this->lt;
+		this->lt = new BalancedEmpty<T>;
+		return true;
+	}
+	return false;
 }
 
 /* insert */
