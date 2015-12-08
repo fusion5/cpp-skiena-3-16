@@ -20,6 +20,7 @@ template <class T>
 class List {
 	public:
 		static  int steps;
+		virtual ~List<T>            ()    = 0;
 		virtual List<T> *find       (T x) = 0; 
 		virtual List<T> *insert     (T x) = 0;
 		virtual List<T> *remove     (T x) = 0;
@@ -36,8 +37,9 @@ int List<T>::steps = 0;
 template <class T>
 class Cons: public List<T> {
 	public: 
-		Cons<T> (T x, List<T> *xs);
-		Cons<T> (T x);
+		Cons<T>  (T x, List<T> *xs);
+		Cons<T>  (T x);
+		~Cons<T> ();
 		List<T> *find (T x);
 		List<T> *insert (T x);
 		List<T> *remove (T x);
@@ -55,6 +57,7 @@ template <class T>
 class Empty : public List<T> {
 	public: 
 		Empty <T> ();
+		~Empty<T> ();
 		List<T> *find (T x);
 		List<T> *insert (T x);
 		List<T> *remove (T x);
@@ -68,13 +71,24 @@ class Empty : public List<T> {
 // Implementation:
 
 template <class T>
+List<T>::~List() {
+	// This destructor is called for both cons and empty instances...
+}
+
+template <class T>
 Empty<T>::Empty() { }
+template <class T>
+Empty<T>::~Empty() {}
 
 template <class T>
 Cons<T>::Cons(T x, List<T> *xs) {
 	List<T>::steps++;
 	this->x  = x;
 	this->xs = xs;
+}
+template <class T>
+Cons<T>::~Cons() {
+	delete this->xs;
 }
 
 /* insert */

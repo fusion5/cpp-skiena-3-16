@@ -22,16 +22,20 @@
 #include <boost/algorithm/string.hpp>
 // #include <sys/time.h>
 // #include <sys/resource.h>
+#include <set>
 
 #include "linked_list.h"
 #include "bin_tree.h"
 #include "balanced_23_tree.h"
 #include "balanced_avl_tree.h"
 
-#define TEST_LIST
+#define TEST_STDSET
+// #define TEST_LIST
 // #define TEST_BIN
-// #define TEST_23
+#define TEST_23
 // #define TEST_AVL
+
+#define CLEAR_INTERVAL 5000
 
 using namespace std;
 
@@ -65,9 +69,12 @@ int main()
 	unique_ptr<AVLTree<string> > avl_tree (new AVLEmpty<string>());
 	AVLTree<string> *avl_node;
 
+	set<string> *std_set = new set<string>();
+	set<string>::iterator it;
+
 	int i = 0;
 
-	while (f->good() && (i < 500000)) {
+	while (f->good() && (i < 49500)) {
 		
 		*f >> word;
 		boost::algorithm::to_lower(word);
@@ -78,6 +85,19 @@ int main()
 		// cout << avl_tree->pp() << endl;
 		// cout << l->pp() << endl;
 
+		#ifdef TEST_STDSET
+			it = std_set->find(word);
+			if (it == std_set->end())
+				std_set->insert (word);
+			else
+				std_set->erase (it);
+
+			if ((i+1)%CLEAR_INTERVAL == 0) {
+				cout << "Clearing std set..." << endl;
+				std_set->clear();
+			}
+		#endif
+
 		#ifdef TEST_LIST
 			m = l->find(word);
 			bool empty = m->empty();
@@ -85,6 +105,7 @@ int main()
 			// cout << word << " result empty? " << empty << endl;
 
 			if (m->empty()) {
+				delete m;
 				// cout << word << " inserting! " << endl;
 				// int os = l->size();
 				list_insert (&l, word);
@@ -94,6 +115,20 @@ int main()
 				// int os = l->size();
 				list_remove (&l, word);
 				// assert(l->size() == (os - 1));
+			}
+
+			if ((i+1)%CLEAR_INTERVAL == 0) {
+				cout << "Clearing list..." << endl;
+				m = nullptr;
+				delete l;
+				l = new Empty<string>();
+				/*
+				while (!l->empty()) {
+					m = l;
+					l = l->release_xs();
+					delete m;
+				}
+				*/
 			}
 		#endif
 
@@ -112,15 +147,30 @@ int main()
 			#endif
 
 			if (bal_23_node->empty()) {
-				// cout << "Insert: " << word << endl;
+				// cout << "Insert " << word << endl;
+				delete bal_23_node;
 				bal_23_tree = balanced_23_tree_insert<string> (
 				  bal_23_tree, word);
-			} else {
-				// cout << "Remove: " << word << endl;
+			}
+			else {
+				// cout << "Remove " << word << endl;
 				balanced_23_tree_remove<string> (&bal_23_tree, 
 				  word);
 			}
-			// cout << bal_23_tree->pp() << endl << endl;
+			// cout << bal_23_tree->pp() << endl;
+
+			if ((i+1)%CLEAR_INTERVAL == 0) {
+				cout << "Clearing 2-3 tree..." << endl;
+				// Empty the 23-tree
+				delete bal_23_tree;
+				bal_23_tree = new BalancedEmpty<string>();
+				/*
+				while (!bal_23_tree->empty()) {
+					balanced_23_tree_remove<string>(
+					  &bal_23_tree, bal_23_tree->max());
+				}
+				*/
+			}
 		#endif
 
 		#ifdef TEST_AVL
@@ -141,6 +191,12 @@ int main()
 				// cout << avl_tree->size() << " " << os << endl;
 				// assert(avl_tree->size() == (os - 1));
 			}
+			if ((i+1)%CLEAR_INTERVAL == 0) {
+				cout << "Clearing AVL tree..." << endl;
+				while (!avl_tree->empty())
+					avl_release_max(&avl_tree);
+			}
+
 		#endif
 		i++;
 	}
@@ -160,8 +216,11 @@ int main()
 	     << Balanced23Tree<string>::steps << endl;
 	cout << "AVL Tree steps: " << AVLTree<string>::steps << endl;
 	
-	cout << "Total words: " << i << "; list size: " 
- 	     << l->size() 
+	cout << "Total words: " << i 
+	     << "; set size: " 
+	     << std_set->size()
+	     << "; list size: " 
+	     << l->size() 
 	     << "; tree size: "
 	     << b->size()
 	     << "; balanced 2-3 tree size: "

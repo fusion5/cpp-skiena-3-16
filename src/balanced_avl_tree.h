@@ -101,7 +101,7 @@ class AVLEmpty: public AVLTree<T> {
 		unique_ptr<AVLTree<T> > rt;
 };
 
-/* constructors */
+/* ctors */
 template <class T>
 AVLNode<T>::AVLNode (AVLTree<T> *lt, AVLTree<T> *rt, T x) {
 	this->lt = unique_ptr<AVLTree<T> >(lt);
@@ -190,7 +190,7 @@ AVLTree<T> *AVLNode<T>::rotate_left() {
 }
 
 
-/* destructors */
+/* dtors */
 template <class T>
 AVLNode<T>::~AVLNode() {
 }
@@ -433,8 +433,9 @@ AVLTree<T> *AVLNode<T>::release_max(AVLTree<T> *my_parent) {
 		assert (!(my_parent->empty()));
 
 		// we have descended only right-wise:
-		assert (!(my_parent->right()->empty()));
+		// assert (!(my_parent->right()->empty()));
 
+		if (!my_parent->right()->empty())
 		if (my_parent->right()->value() == this->value()) {
 			AVLTree<T> *lt = this->release_left();
 			AVLTree<T> *ret = my_parent->release_right();
@@ -442,6 +443,7 @@ AVLTree<T> *AVLNode<T>::release_max(AVLTree<T> *my_parent) {
 			return ret;
 		}
 
+		if (!my_parent->left()->empty())
 		if (my_parent->left()->value() == this->value()) {
 			AVLTree<T> *lt = this->release_left();
 			AVLTree<T> *ret = my_parent->release_left();
@@ -449,7 +451,6 @@ AVLTree<T> *AVLNode<T>::release_max(AVLTree<T> *my_parent) {
 			return ret;
 		}
 	}
-
 	return this->right()->release_max(this);
 }
 template <class T>
@@ -526,6 +527,19 @@ template <class T>
 void avl_remove (unique_ptr<AVLTree<T> > *t, T x) {
 	AVLTree<T> *r = (*t)->remove (x);
 	if (r != nullptr) (*t).reset (r);
+}
+
+template <class T>
+T avl_release_max (unique_ptr<AVLTree<T> > *t) {
+	AVLTree<T> *res;
+	if (!(*t)->right()->empty())
+		return (*t)->right()->release_max(&(**t))->value();
+	if (!(*t)->left()->empty())
+		return (*t)->left()->release_max(&(**t))->value();
+	
+	T ret = (*t)->value();
+	(*t).reset(new AVLEmpty<T>());
+	return ret;
 }
 
 #endif
