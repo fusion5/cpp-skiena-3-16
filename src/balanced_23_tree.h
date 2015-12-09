@@ -1042,23 +1042,24 @@ Balanced23Tree<T> *merge_with_larger (Balanced23Tree<T> *small,
 // vanilla function that allows us to insert (it handles the tuple 
 // return value properly).
 template <class T>
-Balanced23Tree<T> *balanced_23_tree_insert (Balanced23Tree<T> *t, T x) {
+void balanced_23_tree_insert (Balanced23Tree<T> **t, T x) {
 	
 	Balanced23Tree<T> *li;
 	Balanced23Tree<T> *ri;
 	
-	tie (li, ri, ignore) = t->insert(x);
+	tie (li, ri, ignore) = (*t)->insert(x);
 	
 	if (ri->empty()) {
 		delete ri;
 		delete t;
-		return li;
+		*t = li;
+		return;
 	}
 	
 	// li and ri are 2-nodes. Make a new 2-node that holds them, which makes 
 	// the tree one level higher.
-	delete t;
-	return new BalancedNode2<T> (li, ri);
+	delete *t;
+	*t = new BalancedNode2<T> (li, ri);
 }
 
 template <class T>
@@ -1090,4 +1091,10 @@ void balanced_23_tree_remove (Balanced23Tree<T> **t, T x) {
 	delete mt;
 	*t = lt;
 }
+
+template <class T>
+void balanced_23_tree_release_max (Balanced23Tree<T> **t) {
+	// TODO: Add code...
+}
+
 #endif

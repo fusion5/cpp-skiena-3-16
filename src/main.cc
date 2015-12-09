@@ -57,11 +57,11 @@ int main()
 
 	string word;
 
-	List<string> *l = new Empty<string>();
-	List<string> *m;
+	List<string>           *l = new Empty<string>();
+	List<string>           *m = nullptr;
 
-	BinTree<string> *b = new Leaf<string>();
-	BinTree<string> *node;
+	BinTree<string>        *b = new Leaf<string>();
+	BinTree<string>        *node = nullptr;
 
 	Balanced23Tree<string> *bal_23_tree = new BalancedEmpty<string>();
 	Balanced23Tree<string> *bal_23_node = nullptr;
@@ -147,13 +147,11 @@ int main()
 				// cout << "Insert " << word << endl;
 				delete bal_23_node;
 				bal_23_node = nullptr;
-				bal_23_tree = balanced_23_tree_insert<string> (
-				  bal_23_tree, word);
+				balanced_23_tree_insert (&bal_23_tree, word);
 			}
 			else {
 				// cout << "Remove " << word << endl;
-				balanced_23_tree_remove<string> (&bal_23_tree, 
-				  word);
+				balanced_23_tree_remove (&bal_23_tree, word);
 			}
 			// cout << bal_23_tree->pp() << endl;
 
@@ -163,7 +161,7 @@ int main()
 				// delete bal_23_tree;
 				// bal_23_tree = new BalancedEmpty<string>();
 				while (!bal_23_tree->empty()) {
-					balanced_23_tree_remove<string>(
+					balanced_23_tree_remove(
 					  &bal_23_tree, *(bal_23_tree->max()));
 				}
 			}
@@ -226,7 +224,9 @@ int main()
 	std_set->clear();
 	delete bal_23_tree;
 	delete bal_23_node;
+
 	delete avl_tree;
+	delete avl_node;
 
 	f->close();
 	delete f;
