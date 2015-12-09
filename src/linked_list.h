@@ -156,25 +156,6 @@ List<T> *Empty<T>::remove(T x) {
 }
 
 template <class T>
-void list_remove (List<T> **xs, T x) {
-
-	if ((*xs)->empty()) return;
-	if ((*xs)->value() == x) {
-		List<T> *r;
-		r = (*xs)->release_xs ();
-		delete (*xs);
-		*xs = r;
-		return;
-	}
-	(*xs)->remove (x);
-}
-
-template <class T>
-void list_insert (List<T> **xs, T x) {
-	*xs = (*xs)->insert(x);
-}
-
-template <class T>
 bool Cons<T>::empty () { return false; }
 template <class T>
 bool Empty<T>::empty() { return true; }
@@ -217,4 +198,22 @@ T Empty<T>::value() {
 	throw "error";
 }
 
+template <class T>
+void list_remove (List<T> **xs, T x) {
+
+	if ((*xs)->empty()) return;
+	if ((*xs)->value() == x) {
+		List<T> *r;
+		r = (*xs)->release_xs ();
+		delete (*xs);
+		*xs = r;
+		return;
+	}
+	(*xs)->remove (x);
+}
+
+template <class T>
+void list_insert (List<T> **xs, T x) {
+	*xs = (*xs)->insert(x);
+}
 #endif

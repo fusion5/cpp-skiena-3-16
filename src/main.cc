@@ -33,7 +33,7 @@
 // #define TEST_LIST
 // #define TEST_BIN
 #define TEST_23
-// #define TEST_AVL
+#define TEST_AVL
 
 #define CLEAR_INTERVAL 5000
 
@@ -64,17 +64,19 @@ int main()
 	BinTree<string> *node;
 
 	Balanced23Tree<string> *bal_23_tree = new BalancedEmpty<string>();
-	Balanced23Tree<string> *bal_23_node;
+	Balanced23Tree<string> *bal_23_node = nullptr;
 
-	unique_ptr<AVLTree<string> > avl_tree (new AVLEmpty<string>());
-	AVLTree<string> *avl_node;
+	AVLTree<string>        *avl_tree = new AVLEmpty<string>();
+	AVLTree<string>        *avl_node = nullptr;
 
 	set<string> *std_set = new set<string>();
 	set<string>::iterator it;
 
 	int i = 0;
 
-	while (f->good() && (i < 49500)) {
+	assert (l->empty());
+
+	while (f->good() && (i < 9500)) {
 		
 		*f >> word;
 		boost::algorithm::to_lower(word);
@@ -101,40 +103,35 @@ int main()
 		#ifdef TEST_LIST
 			m = l->find(word);
 			bool empty = m->empty();
-
 			// cout << word << " result empty? " << empty << endl;
-
 			if (m->empty()) {
-				delete m;
-				// cout << word << " inserting! " << endl;
+				// delete m;
+				// cout << "Inserting: " << word << endl;
 				// int os = l->size();
 				list_insert (&l, word);
+				// l = l->insert(word);
 				// assert(l->size() == (os + 1));
 			} else {
-				// cout << word << " removing! " << endl;
+				// cout << "Removing: " << word << endl;
 				// int os = l->size();
 				list_remove (&l, word);
 				// assert(l->size() == (os - 1));
 			}
-
 			if ((i+1)%CLEAR_INTERVAL == 0) {
 				cout << "Clearing list..." << endl;
-				m = nullptr;
-				delete l;
-				l = new Empty<string>();
-				/*
+				// m = nullptr;
+				// delete l;
+				// l = new Empty<string>();
 				while (!l->empty()) {
 					m = l;
 					l = l->release_xs();
 					delete m;
 				}
-				*/
 			}
 		#endif
 
 		#ifdef TEST_BIN
 			node = b->find(word);
-			assert (node->empty() == empty);
 			#ifdef TEST_LIST
 			if (node->empty()) b = b->insert(word);
 			#endif
@@ -149,6 +146,7 @@ int main()
 			if (bal_23_node->empty()) {
 				// cout << "Insert " << word << endl;
 				delete bal_23_node;
+				bal_23_node = nullptr;
 				bal_23_tree = balanced_23_tree_insert<string> (
 				  bal_23_tree, word);
 			}
@@ -162,39 +160,32 @@ int main()
 			if ((i+1)%CLEAR_INTERVAL == 0) {
 				cout << "Clearing 2-3 tree..." << endl;
 				// Empty the 23-tree
-				delete bal_23_tree;
-				bal_23_tree = new BalancedEmpty<string>();
-				/*
+				// delete bal_23_tree;
+				// bal_23_tree = new BalancedEmpty<string>();
 				while (!bal_23_tree->empty()) {
 					balanced_23_tree_remove<string>(
-					  &bal_23_tree, bal_23_tree->max());
+					  &bal_23_tree, *(bal_23_tree->max()));
 				}
-				*/
 			}
 		#endif
 
 		#ifdef TEST_AVL
+			// cout << avl_tree->pp() << endl;
 			avl_node = avl_tree->find(word);
 			#ifdef TEST_LIST
 				assert (avl_node->empty() == empty);
 			#endif
 			if (avl_node->empty()) {
-				// cout << "Insert: " << word << endl;
 				avl_insert (&avl_tree, word);
-				// cout << avl_tree->pp() << endl;
 			} else {
-				// int os = avl_tree->size();
-				// cout << "Delete: " << word << endl;
-				// cout << avl_tree->pp() << endl;
 				avl_remove (&avl_tree, word);
-				// cout << avl_tree->pp() << endl;
-				// cout << avl_tree->size() << " " << os << endl;
-				// assert(avl_tree->size() == (os - 1));
 			}
 			if ((i+1)%CLEAR_INTERVAL == 0) {
 				cout << "Clearing AVL tree..." << endl;
 				while (!avl_tree->empty())
-					avl_release_max(&avl_tree);
+					avl_release_max (&avl_tree);
+				// delete avl_tree;
+				// avl_tree = new AVLEmpty<string>();
 			}
 
 		#endif
@@ -210,6 +201,7 @@ int main()
 	cout << avl_tree->pp() << endl << endl;
 */
 
+	// Report...
 	cout << "List steps: " << List<string>::steps << endl;
 	cout << "BinTree steps: " << BinTree<string>::steps << endl;
 	cout << "Balanced 2-3 Tree steps: " 
@@ -229,6 +221,15 @@ int main()
 	     << avl_tree->size()
 	     << ", height " << avl_tree->height()
 	     << endl;
+
+	// Cleanup
+	std_set->clear();
+	delete bal_23_tree;
+	delete bal_23_node;
+	delete avl_tree;
+
+	f->close();
+	delete f;
 
 	return 0;
 }

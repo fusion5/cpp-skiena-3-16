@@ -40,8 +40,8 @@ class Balanced23Tree {
 		 * nodes and an updated maximum. If I get back just 1 node, I 
 		 * only update the maximum, but if I receive 2, it means that 
 		 * the child where I inserted a value has split itself, and I 
-		 * must handle the split and accomodate the node. Potentially, 
-		 * this means that I might myself also.
+		 * must handle the split and accomodate the new node. Potentially, 
+		 * this means that I might also split myself.
 		 **/
 		virtual insert_ret_type<T> insert       (T x) = 0;
 		virtual T                  *max         ()    = 0;
@@ -72,13 +72,13 @@ class BalancedNode2: public Balanced23Tree<T> {
 		BalancedNode2<T>   ( Balanced23Tree<T> *lt
 		                   , Balanced23Tree<T> *mt );
 		~BalancedNode2<T>  ();
-		Balanced23Tree<T>  *find (T x);
-		insert_ret_type<T> insert (T x);
-		T                  *max ();
-		bool               empty ();
-		bool               leaf ();
-		string             pp ();
-		int                size();
+		Balanced23Tree<T>  *find       (T x);
+		insert_ret_type<T> insert      (T x);
+		T                  *max        ();
+		bool               empty       ();
+		bool               leaf        ();
+		string             pp          ();
+		int                size        ();
 		T                  *value      ();
 		bool               can_release ();
 		release_type<T>    release_min ();
@@ -156,14 +156,14 @@ template <class T>
 class BalancedEmpty: public Balanced23Tree<T> {
 	public:
 		BalancedEmpty<T>   ();
-		~BalancedEmpty<T>   ();
-		Balanced23Tree<T>  *find (T x);
-		insert_ret_type<T> insert (T x);
-		T                  *max ();
-		bool               empty ();
-		bool               leaf ();
-		string             pp ();
-		int                size ();
+		~BalancedEmpty<T>  ();
+		Balanced23Tree<T>  *find       (T x);
+		insert_ret_type<T> insert      (T x);
+		T                  *max        ();
+		bool               empty       ();
+		bool               leaf        ();
+		string             pp          ();
+		int                size        ();
 		T                  *value      ();
 		bool               can_release ();
 		release_type<T>    release_min ();
@@ -423,7 +423,7 @@ Balanced23Tree<T> *BalancedNode2<T>::fill_gap (Balanced23Tree<T> *t, bool rhs) {
 }
 template <class T>
 Balanced23Tree<T> *BalancedNode3<T>::fill_gap (Balanced23Tree<T> *t, bool right) {
-	assert (false); return nullptr;
+	assert (false); return t;
 }
 
 /* release_max 

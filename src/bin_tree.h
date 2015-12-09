@@ -47,6 +47,7 @@ class Leaf: public BinTree<T> {
 		bool       empty();
 };
 
+/* ctors */
 template <class T>
 Leaf<T>::Leaf() { }
 
@@ -57,6 +58,9 @@ Node<T>::Node(T x, BinTree<T> *lt, BinTree<T> *rt) {
 	this->x  = x;
 }
 
+/* dtors */
+
+/* empty */
 template <class T>
 bool Leaf<T>::empty() { return true; }
 template <class T>
