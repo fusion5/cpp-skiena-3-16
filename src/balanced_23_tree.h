@@ -1051,7 +1051,7 @@ void balanced_23_tree_insert (Balanced23Tree<T> **t, T x) {
 	
 	if (ri->empty()) {
 		delete ri;
-		delete t;
+		delete *t;
 		*t = li;
 		return;
 	}
