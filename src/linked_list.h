@@ -28,7 +28,7 @@ class List {
 		virtual bool    empty       ()    = 0;
 		virtual int     size        ()    = 0;
 		virtual string  pp          ()    = 0; // Pretty Print
-		virtual T       value       ()    = 0;
+		virtual T       *value      ()    = 0;
 };
 
 template <class T>
@@ -47,7 +47,7 @@ class Cons: public List<T> {
 		bool    empty();
 		int     size();
 		string  pp (); // Pretty Print
-		T       value ();
+		T       *value ();
 	private:
 		List<T> *xs; // the rest of the list, x sequence
 		T x;         // current node, x
@@ -65,7 +65,7 @@ class Empty : public List<T> {
 		bool    empty();
 		int     size();
 		string  pp(); // Pretty Print
-		T       value ();
+		T       *value ();
 };
 
 // Implementation:
@@ -189,11 +189,11 @@ template <class T>
 string Empty<T>::pp() { return "[]"; }
 
 template <class T>
-T Cons<T>::value() {
-	return this->x;
+T *Cons<T>::value() {
+	return &(this->x);
 }
 template <class T>
-T Empty<T>::value() {
+T *Empty<T>::value() {
 	cerr << "value() called on empty list" << endl;
 	throw "error";
 }
@@ -202,7 +202,7 @@ template <class T>
 void list_remove (List<T> **xs, T x) {
 
 	if ((*xs)->empty()) return;
-	if ((*xs)->value() == x) {
+	if (*((*xs)->value()) == x) {
 		List<T> *r;
 		r = (*xs)->release_xs ();
 		delete (*xs);
@@ -216,4 +216,16 @@ template <class T>
 void list_insert (List<T> **xs, T x) {
 	*xs = (*xs)->insert(x);
 }
+
+template <class T>
+T list_release_head (List<T> **xs) {
+	T ret;
+	List<T> *x;
+	x = (*xs);
+	(*xs) = (*xs)->release_xs();
+	ret = *(x->value());
+	delete x;
+	return ret;
+}
+
 #endif

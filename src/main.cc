@@ -31,7 +31,7 @@
 
 #define TEST_STDSET
 // #define TEST_LIST
-// #define TEST_BIN
+#define TEST_BIN
 #define TEST_23
 #define TEST_AVL
 
@@ -63,7 +63,7 @@ int main()
 	BinTree<string>        *b = new Leaf<string>();
 	BinTree<string>        *node = nullptr;
 
-	Balanced23Tree<string> *bal_23_tree = new BalancedEmpty<string>();
+	Balanced23Tree<string> *bal_23_tree = nullptr;
 	Balanced23Tree<string> *bal_23_node = nullptr;
 
 	AVLTree<string>        *avl_tree = new AVLEmpty<string>();
@@ -76,7 +76,7 @@ int main()
 
 	assert (l->empty());
 
-	while (f->good() && (i < 9500)) {
+	while (f->good() && (i < 49500)) {
 		
 		*f >> word;
 		boost::algorithm::to_lower(word);
@@ -122,11 +122,8 @@ int main()
 				// m = nullptr;
 				// delete l;
 				// l = new Empty<string>();
-				while (!l->empty()) {
-					m = l;
-					l = l->release_xs();
-					delete m;
-				}
+				while (!l->empty())
+					list_release_head(&l);
 			}
 		#endif
 
@@ -138,18 +135,16 @@ int main()
 		#endif
 
 		#ifdef TEST_23
-			bal_23_node = bal_23_tree->find(word);
+			if (bal_23_tree)
+				bal_23_node = bal_23_tree->find(word);
 			#ifdef TEST_LIST
-			assert (bal_23_node->empty() == empty);
+			assert ((bal_23_node == nullptr) == empty);
 			#endif
 
-			if (bal_23_node->empty()) {
+			if (!bal_23_node) {
 				// cout << "Insert " << word << endl;
-				delete bal_23_node;
-				bal_23_node = nullptr;
 				balanced_23_tree_insert (&bal_23_tree, word);
-			}
-			else {
+			} else {
 				// cout << "Remove " << word << endl;
 				balanced_23_tree_remove (&bal_23_tree, word);
 			}
@@ -158,11 +153,14 @@ int main()
 			if ((i+1)%CLEAR_INTERVAL == 0) {
 				cout << "Clearing 2-3 tree..." << endl;
 				// Empty the 23-tree
-				// delete bal_23_tree;
-				// bal_23_tree = new BalancedEmpty<string>();
-				while (!bal_23_tree->empty()) {
-					balanced_23_tree_remove(
-					  &bal_23_tree, *(bal_23_tree->max()));
+				delete bal_23_tree;
+				bal_23_tree = nullptr;
+
+				while (bal_23_tree) {
+					// balanced_23_tree_release_max (
+					//  &bal_23_tree);
+					// balanced_23_tree_remove(
+					//  &bal_23_tree, *(bal_23_tree->max()));
 				}
 			}
 		#endif
@@ -214,19 +212,24 @@ int main()
 	     << "; tree size: "
 	     << b->size()
 	     << "; balanced 2-3 tree size: "
-	     << bal_23_tree->size()
+	     << (bal_23_tree?bal_23_tree->size():0)
 	     << "; AVL tree size: "
 	     << avl_tree->size()
 	     << ", height " << avl_tree->height()
 	     << endl;
 
 	// Cleanup
+	if (b) delete b;
 	std_set->clear();
-	delete bal_23_tree;
-	delete bal_23_node;
+	delete std_set;
+	if (bal_23_tree) delete bal_23_tree;
+	// if (bal_23_node) delete bal_23_node;
+	// delete bal_23_node;
+	// bal_23_node = nullptr;
 
-	delete avl_tree;
-	delete avl_node;
+	if (avl_tree) delete avl_tree;
+	// avl_node = nullptr;
+	if (l) delete l;
 
 	f->close();
 	delete f;
