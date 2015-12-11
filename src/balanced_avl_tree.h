@@ -9,14 +9,6 @@ using namespace std;
 
 template <class T> class AVLTree;
 
-/*
- *  e.g. tree:
- *
- *      2
- *     / \
- *    1   3
- **/
-
 template <class T>
 class AVLTree {
 	public: 
@@ -410,8 +402,6 @@ AVLTree<T> *AVLNode<T>::remove(T x) {
 		// Are we heavy on the rhs?
 		if (this->rt->height() > this->lt->height() + 1)
 			return this->rotate_left(); // Heavy on the right side...
-
-		this->h = max (this->rt->height(), this->lt->height()) + 1;
 	}
 
 	if (x > this->x) {
@@ -425,9 +415,8 @@ AVLTree<T> *AVLNode<T>::remove(T x) {
 		// tree.
 		if (this->lt->height() > this->rt->height() + 1)
 			return this->rotate_right(); // Heavy on the left side...
-
-		this->h = max (this->rt->height(), this->lt->height()) + 1;
 	}
+	this->h = max (this->rt->height(), this->lt->height()) + 1;
 	
 	// Nothing to do upwards in the tree...
 	return nullptr;

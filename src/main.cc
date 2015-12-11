@@ -63,11 +63,11 @@ int main()
 	BinTree<string>        *b = new Leaf<string>();
 	BinTree<string>        *node = nullptr;
 
-	Balanced23Tree<string> *bal_23_tree = nullptr;
+	Balanced23Tree<string> *bal_23_tree = new BalancedEmpty<string>();
 	Balanced23Tree<string> *bal_23_node = nullptr;
 
-	AVLTree<string>        *avl_tree = new AVLEmpty<string>();
-	AVLTree<string>        *avl_node = nullptr;
+	AVLTree<string>        *avl_tree    = new AVLEmpty<string>();
+	AVLTree<string>        *avl_node    = nullptr;
 
 	set<string> *std_set = new set<string>();
 	set<string>::iterator it;
@@ -76,7 +76,7 @@ int main()
 
 	assert (l->empty());
 
-	while (f->good() && (i < 49500)) {
+	while (f->good() && (i < 9500)) {
 		
 		*f >> word;
 		boost::algorithm::to_lower(word);
@@ -135,30 +135,22 @@ int main()
 		#endif
 
 		#ifdef TEST_23
-			if (bal_23_tree)
-				bal_23_node = bal_23_tree->find(word);
+			if (bal_23_tree) bal_23_node = bal_23_tree->find(word);
 			#ifdef TEST_LIST
-			assert ((bal_23_node == nullptr) == empty);
+				assert ((bal_23_node == nullptr) == empty);
 			#endif
-
-			if (!bal_23_node) {
-				// cout << "Insert " << word << endl;
+			if (!bal_23_node)
 				balanced_23_tree_insert (&bal_23_tree, word);
-			} else {
-				// cout << "Remove " << word << endl;
+			else
 				balanced_23_tree_remove (&bal_23_tree, word);
-			}
-			// cout << bal_23_tree->pp() << endl;
 
 			if ((i+1)%CLEAR_INTERVAL == 0) {
 				cout << "Clearing 2-3 tree..." << endl;
 				// Empty the 23-tree
-				delete bal_23_tree;
-				bal_23_tree = nullptr;
-
-				while (bal_23_tree) {
-					// balanced_23_tree_release_max (
-					//  &bal_23_tree);
+				// delete bal_23_tree;
+				// bal_23_tree = new BalancedEmpty<string>();
+				while (!bal_23_tree->empty()) {
+					balanced_23_tree_release_max (&bal_23_tree);
 					// balanced_23_tree_remove(
 					//  &bal_23_tree, *(bal_23_tree->max()));
 				}
@@ -212,24 +204,21 @@ int main()
 	     << "; tree size: "
 	     << b->size()
 	     << "; balanced 2-3 tree size: "
-	     << (bal_23_tree?bal_23_tree->size():0)
+	     << bal_23_tree->size()
 	     << "; AVL tree size: "
 	     << avl_tree->size()
 	     << ", height " << avl_tree->height()
 	     << endl;
 
 	// Cleanup
-	if (b) delete b;
-	std_set->clear();
-	delete std_set;
-	if (bal_23_tree) delete bal_23_tree;
-	// if (bal_23_node) delete bal_23_node;
-	// delete bal_23_node;
-	// bal_23_node = nullptr;
-
-	if (avl_tree) delete avl_tree;
-	// avl_node = nullptr;
 	if (l) delete l;
+
+	if (b) delete b;
+
+	delete std_set;
+
+	if (bal_23_tree) delete bal_23_tree;
+	if (avl_tree)    delete avl_tree;
 
 	f->close();
 	delete f;

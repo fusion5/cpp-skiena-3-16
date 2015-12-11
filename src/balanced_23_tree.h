@@ -45,7 +45,7 @@ class Balanced23Tree {
 		 **/
 		virtual insert_ret_type<T> insert       (T x) = 0;
 		virtual T                  *max         ()    = 0;
-		// virtual bool               empty        ()    = 0;
+		virtual bool               empty        ()    = 0;
 		virtual bool               leaf         ()    = 0;
 		virtual string             pp           ()    = 0;
 		virtual int                size         ()    = 0;
@@ -80,7 +80,7 @@ class BalancedNode2: public Balanced23Tree<T> {
 		Balanced23Tree<T>  *find       (T x);
 		insert_ret_type<T> insert      (T x);
 		T                  *max        ();
-		// bool               empty       ();
+		bool               empty       ();
 		bool               leaf        ();
 		string             pp          ();
 		int                size        ();
@@ -113,7 +113,7 @@ class BalancedNode3: public Balanced23Tree<T> {
 		Balanced23Tree<T>  *find       (T x);
 		insert_ret_type<T> insert      (T x);
 		T                  *max        ();
-		// bool               empty       ();
+		bool               empty       ();
 		bool               leaf        ();
 		string             pp          ();
 	        int                size        ();
@@ -145,7 +145,7 @@ class BalancedLeaf: public Balanced23Tree<T> {
 		Balanced23Tree<T>  *find       (T x);
 		insert_ret_type<T> insert      (T x);
 		T                  *max        ();
-		// bool               empty       ();
+		bool               empty       ();
 		bool               leaf        ();
 		string             pp          ();
 		int                size        ();
@@ -165,7 +165,6 @@ class BalancedLeaf: public Balanced23Tree<T> {
 		T x;
 };
 
-/*
 template <class T>
 class BalancedEmpty: public Balanced23Tree<T> {
 	public:
@@ -191,15 +190,12 @@ class BalancedEmpty: public Balanced23Tree<T> {
 		Balanced23Tree<T>  *release_rt ();
 		release_type<T>    release_max ();
 };
-*/
 
 /* ctors */
 template <class T>
 BalancedLeaf<T>::BalancedLeaf (T x) { this->x = x; };
-/*
 template <class T>
 BalancedEmpty<T>::BalancedEmpty () {};
-*/
 template <class T>
 BalancedNode2<T>::BalancedNode2 (Balanced23Tree<T> *lt, Balanced23Tree<T> *mt) {
 	assert (lt);
@@ -223,8 +219,8 @@ BalancedNode3<T>::BalancedNode3 ( Balanced23Tree<T> *lt
 /* dtors */
 template <class T>
 Balanced23Tree<T>::~Balanced23Tree () { }
-// template <class T>
-// BalancedEmpty<T>::~BalancedEmpty ()   { }
+template <class T>
+BalancedEmpty<T>::~BalancedEmpty ()   { }
 template <class T>
 BalancedLeaf<T>::~BalancedLeaf ()     { }
 template <class T>
@@ -233,7 +229,7 @@ template <class T>
 BalancedNode3<T>::~BalancedNode3 ()   { }
 
 /* pp */
-// template <class T> string BalancedEmpty<T>::pp() { return "Empty"; }
+template <class T> string BalancedEmpty<T>::pp() { return "Empty"; }
 template <class T> string BalancedLeaf <T>::pp() { 
 	return "Leaf " + boost::lexical_cast<string>(this->x); }
 template <class T> string BalancedNode2<T>::pp() {
@@ -245,7 +241,7 @@ template <class T> string BalancedNode3<T>::pp() {
 	                 + this->rt->pp() + ")";  }
 
 /* size */
-// template <class T> int BalancedEmpty<T>::size() { return 0; }
+template <class T> int BalancedEmpty<T>::size() { return 0; }
 template <class T> int BalancedLeaf <T>::size() { return 1; }
 template <class T> int BalancedNode2<T>::size() {
 	return this->lt->size() + this->mt->size(); }
@@ -253,21 +249,19 @@ template <class T> int BalancedNode3<T>::size() {
 	return this->lt->size() + this->mt->size() + this->rt->size(); }
 
 /* value */
-// template <class T> T *BalancedEmpty<T>::value() { assert (false); }
+template <class T> T *BalancedEmpty<T>::value() { assert (false); }
 template <class T> T *BalancedLeaf<T> ::value() { return &(this->x); }
 template <class T> T *BalancedNode2<T>::value() { assert (false); }
 template <class T> T *BalancedNode3<T>::value() { assert (false); }
 
 /* empty */
-/*
-// template <class T> bool BalancedEmpty<T>::empty() { return true;  }
+template <class T> bool BalancedEmpty<T>::empty() { return true;  }
 template <class T> bool BalancedLeaf <T>::empty() { return false; }
 template <class T> bool BalancedNode2<T>::empty() { return false; }
 template <class T> bool BalancedNode3<T>::empty() { return false; }
-*/
 
 /* leaf */
-// template <class T> bool BalancedEmpty<T>::leaf() { return false;  }
+template <class T> bool BalancedEmpty<T>::leaf() { return false;  }
 template <class T> bool BalancedLeaf <T>::leaf() { return true; }
 template <class T> bool BalancedNode2<T>::leaf() { return false; }
 template <class T> bool BalancedNode3<T>::leaf() { return false; }
@@ -280,8 +274,8 @@ release_type<T> *release_2node (Balanced23Tree<T> *t) {
 }
 
 /* Boilerplate code: release_lt... */
-// template <class T>
-// Balanced23Tree<T> *BalancedEmpty<T>::release_lt () { assert (false); }
+template <class T>
+Balanced23Tree<T> *BalancedEmpty<T>::release_lt () { assert (false); }
 template <class T>
 Balanced23Tree<T> *BalancedLeaf<T>::release_lt  () { assert (false); }
 template <class T>
@@ -302,8 +296,8 @@ Balanced23Tree<T> *BalancedNode3<T>::release_lt () {
 }
 
 /* Boilerplate code: release_mt... */
-// template <class T>
-// Balanced23Tree<T> *BalancedEmpty<T>::release_mt () { assert (false); }
+template <class T>
+Balanced23Tree<T> *BalancedEmpty<T>::release_mt () { assert (false); }
 template <class T> 
 Balanced23Tree<T> *BalancedLeaf<T>::release_mt ()  { assert (false); }
 template <class T>
@@ -324,8 +318,8 @@ Balanced23Tree<T> *BalancedNode3<T>::release_mt () {
 }
 
 /* Boilerplate code: release_rt... */
-// template <class T>
-// Balanced23Tree<T> *BalancedEmpty<T>::release_rt () { assert (false); }
+template <class T>
+Balanced23Tree<T> *BalancedEmpty<T>::release_rt () { assert (false); }
 template <class T> 
 Balanced23Tree<T> *BalancedLeaf<T>::release_rt ()  { assert (false); }
 template <class T>
@@ -342,8 +336,8 @@ Balanced23Tree<T> *BalancedNode3<T>::release_rt () {
 /* release_max
  *   returns: see release_type
  */
-// template <class T>
-// release_type<T> BalancedEmpty<T>::release_max () { assert(false); }
+template <class T>
+release_type<T> BalancedEmpty<T>::release_max () { assert(false); }
 template <class T>
 release_type<T> BalancedLeaf<T> ::release_max () { assert(false); }
 template <class T>
@@ -384,8 +378,8 @@ release_type<T> BalancedNode2<T>::release_max () {
 	// lt is also a 2-node...
 	assert (this->lt);
 	this->mt.reset(this->mt->merge_left(this->release_lt()));
-	assert (this->lt);
-	return make_tuple (this, max); // return this means we have a gap...
+	// assert (this->lt);
+	return make_tuple (this, max); // 'this' as the left means we have a gap...
 }
 template <class T>
 release_type<T> BalancedNode3<T>::release_max () {
@@ -428,8 +422,8 @@ release_type<T> BalancedNode3<T>::release_max () {
 /* split_right 
  *   returns: see release_type
  * */
-// template <class T>
-// release_type<T> BalancedEmpty<T>::split_right () { assert(false); }
+template <class T>
+release_type<T> BalancedEmpty<T>::split_right () { assert(false); }
 template <class T>
 release_type<T> BalancedLeaf<T>::split_right  () { assert(false); }
 template <class T>
@@ -448,8 +442,8 @@ release_type<T> BalancedNode3<T>::split_right () {
 /* split_left
  *   returns: see release_type
  */
-// template <class T>
-// release_type<T> BalancedEmpty<T>::split_left () { assert(false); }
+template <class T>
+release_type<T> BalancedEmpty<T>::split_left () { assert(false); }
 template <class T>
 release_type<T> BalancedLeaf<T>::split_left ()  { assert(false); }
 template <class T>
@@ -469,12 +463,10 @@ release_type<T> BalancedNode3<T>::split_left () {
 /*
  * fill_gap
  * */
-/*
 template <class T>
 Balanced23Tree<T> *BalancedEmpty<T>::fill_gap (Balanced23Tree<T> *t, bool rhs) {
 	return t;
 }
-*/
 template <class T>
 Balanced23Tree<T> *BalancedLeaf<T>::fill_gap (Balanced23Tree<T> *t, bool rhs) {
 	assert(false); return t;
@@ -500,10 +492,8 @@ Balanced23Tree<T> *BalancedNode3<T>::fill_gap (Balanced23Tree<T> *t, bool right)
 }
 
 /* can_release */
-/*
 template <class T>
 bool BalancedEmpty<T>::can_release () { return false; }
-*/
 template <class T>
 bool BalancedLeaf<T>::can_release()   { return false; }
 template <class T>
@@ -512,13 +502,11 @@ template <class T>
 bool BalancedNode3<T>::can_release()  { return true; }
 
 /* find */
-/*
 template <class T>
 Balanced23Tree<T> *BalancedEmpty<T>::find (T x) { 
 	Balanced23Tree<T>::steps++;
 	return nullptr; 
 }
-*/
 template <class T>
 Balanced23Tree<T> *BalancedLeaf<T>::find (T x) {
 	Balanced23Tree<T>::steps++;
@@ -541,6 +529,8 @@ Balanced23Tree<T> *BalancedNode3<T>::find (T x) {
 
 /* max */
 template <class T>
+T *BalancedEmpty<T>::max() { assert(false); throw "Cannot call max here"; }
+template <class T>
 T *BalancedNode2<T>::max() {
 	Balanced23Tree<T>::steps++;
 	// return this->mt->max(); 
@@ -555,23 +545,17 @@ T *BalancedLeaf<T>::max()  {
 	Balanced23Tree<T>::steps++;
 	return this->value(); 
 }
-/*
-template <class T>
-T *BalancedEmpty<T>::max() { assert(false); throw "Cannot call max here"; }
-*/
 
 /* remove 
  *   returns - true if a gap was left after removal
  *           - false otherwise
  * */
-/*
 template <class T>
 bool BalancedEmpty<T>::remove (T x) {
 	assert (false);
 	Balanced23Tree<T>::steps++;
 	return false;
 }
-*/
 template <class T>
 bool BalancedLeaf<T>::remove (T x) {
 	assert (false);
@@ -788,14 +772,12 @@ bool BalancedNode3<T>::remove (T x) {
  *   leaves the object in a state ready for deletion
  *   returns: see insert_ret_type
  * */
-/*
 template <class T>
 insert_ret_type<T> BalancedEmpty<T>::insert (T x) {
 	Balanced23Tree<T>::steps++;
 	Balanced23Tree<T> *l = new BalancedLeaf<T> (x);
 	return make_tuple (l, new BalancedEmpty<T>(), l->value());
 }
-*/
 template <class T>
 insert_ret_type<T> BalancedLeaf<T>::insert (T x) {
 	Balanced23Tree<T>::steps++;
@@ -1028,11 +1010,9 @@ Balanced23Tree<T> *reduce_3node (Balanced23Tree<T> *t) {
  * This is the counterpart of splitting. If I am a 2-node with a gap, eliminate
  * the gap and put t's children to my left
  */
-/*
 template <class T> 
 Balanced23Tree<T> *BalancedEmpty<T>::merge_left (Balanced23Tree<T> *t) { 
 	assert (false); }
-*/
 template <class T> 
 Balanced23Tree<T> *BalancedLeaf<T>:: merge_left (Balanced23Tree<T> *t) {
 	assert (false); }
@@ -1060,11 +1040,9 @@ Balanced23Tree<T> *BalancedNode3<T>::merge_left (Balanced23Tree<T> *t) {
  * This is the counterpart of splitting. If I am a 2-node with a gap, eliminate
  * the gap and put t's children to my right.
  * */
-/*
 template <class T> 
 Balanced23Tree<T> *BalancedEmpty<T>::merge_right (Balanced23Tree<T> *t) { 
 	assert (false); }
-*/
 template <class T> 
 Balanced23Tree<T> *BalancedLeaf<T>:: merge_right (Balanced23Tree<T> *t) {
 	assert (false); }
@@ -1159,7 +1137,8 @@ void balanced_23_tree_insert (Balanced23Tree<T> **t, T x) {
 	Balanced23Tree<T> *li;
 	Balanced23Tree<T> *ri;
 	
-	if (*t == nullptr) {
+	if ((*t)->empty()) {
+		delete *t;
 		*t = new BalancedLeaf<T>(x);
 		return;
 	}
@@ -1181,12 +1160,12 @@ void balanced_23_tree_insert (Balanced23Tree<T> **t, T x) {
 
 template <class T>
 void balanced_23_tree_remove (Balanced23Tree<T> **t, T x) {
-	if ((*t) == nullptr) return;
+	if ((*t)->empty()) return;
 
 	if ((*t)->leaf()) {
 		if (*((*t)->value()) == x) {
 			delete *t;
-			*t = nullptr; // new BalancedEmpty<T>();
+			*t = new BalancedEmpty<T>();
 		}
 		return;
 	}
@@ -1216,7 +1195,7 @@ void balanced_23_tree_remove (Balanced23Tree<T> **t, T x) {
 template <class T>
 T balanced_23_tree_release_max (Balanced23Tree<T> **t) {
 
-	if ((*t) == nullptr) {
+	if ((*t)->empty()) {
 		throw "called release max on an empty tree";
 		assert(false);
 	}
@@ -1224,7 +1203,7 @@ T balanced_23_tree_release_max (Balanced23Tree<T> **t) {
 	if ((*t)->leaf()) {
 		T ret = *((*t)->value());
 		delete *t;
-		*t = nullptr; // new BalancedEmpty<T>;
+		*t = new BalancedEmpty<T>();
 		return ret;
 	}
 
