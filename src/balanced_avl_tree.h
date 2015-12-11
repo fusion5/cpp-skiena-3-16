@@ -14,6 +14,7 @@ class AVLTree {
 	public: 
 		virtual ~AVLTree<T>               ()    = 0;
 		virtual AVLTree<T> *find          (T x) = 0;
+		virtual T          *max           ()    = 0;
 		virtual tuple<AVLTree<T>*, AVLTree<T>* >
 		                   release_max    ()    = 0;
 		virtual AVLTree<T> *remove        (T x) = 0;
@@ -45,6 +46,7 @@ class AVLNode: public AVLTree<T> {
 		AVLNode                   (AVLTree<T> *lt, AVLTree<T> *rt, T x);
 		~AVLNode                  ();
 		AVLTree<T> *find          (T x);
+		T          *max           ();
 		tuple<AVLTree<T>*, AVLTree<T>* >
 		           release_max    ();
 		AVLTree<T> *remove        (T x);
@@ -77,6 +79,7 @@ class AVLEmpty: public AVLTree<T> {
 		AVLEmpty                  ();
 		~AVLEmpty                 ();
 		AVLTree<T> *find          (T x);
+		T          *max           ();
 		tuple<AVLTree<T>*, AVLTree<T>* >
 		           release_max    ();
 		AVLTree<T> *remove        (T x);
@@ -103,7 +106,7 @@ AVLNode<T>::AVLNode (AVLTree<T> *lt, AVLTree<T> *rt, T x) {
 	this->lt = unique_ptr<AVLTree<T> >(lt);
 	this->rt = unique_ptr<AVLTree<T> >(rt);
 	this->x  = x;
-	this->h  = max (lt->height(), rt->height()) + 1;
+	this->h  = std::max (lt->height(), rt->height()) + 1;
 }
 template <class T>
 AVLEmpty<T>::AVLEmpty() {
@@ -126,9 +129,8 @@ AVLTree<T> *AVLNode<T>::rotate_right() {
 
 	assert (!this->left()->empty());
 
-	this->h = max (this->left()->right()->height(), 
+	this->h = std::max (this->left()->right()->height(), 
 	  this->right()->height()) + 1;
-
 
 	// 'this' will be deallocated, so make sure it doesn't
 	// hold anything...
@@ -163,7 +165,7 @@ AVLTree<T> *AVLNode<T>::rotate_left() {
 		  / \         / \
 		 rl  rr      l  rl
 	*/
-	this->h = max (this-> left()->height(),
+	this->h = std::max (this-> left()->height(),
 	  this->right()->left()->height()) + 1;
 	
 	AVLTree<T> *l = this->release_left();
@@ -196,6 +198,16 @@ template <class T>
 AVLEmpty<T>::~AVLEmpty() {
 }
 
+template <class T>
+T *AVLNode<T>::max() {
+	if (this->rt->empty())
+		return &(this->x);
+	return this->rt->max();
+}
+template <class T>
+T *AVLEmpty<T>::max() {
+	assert(false);
+}
 /* release_left */
 template <class T>
 AVLTree<T> *AVLNode<T>::release_left(){
@@ -416,7 +428,7 @@ AVLTree<T> *AVLNode<T>::remove(T x) {
 		if (this->lt->height() > this->rt->height() + 1)
 			return this->rotate_right(); // Heavy on the left side...
 	}
-	this->h = max (this->rt->height(), this->lt->height()) + 1;
+	this->h = std::max (this->rt->height(), this->lt->height()) + 1;
 	
 	// Nothing to do upwards in the tree...
 	return nullptr;
@@ -504,7 +516,7 @@ AVLTree<T> *AVLNode<T>::insert(T x) {
 		if (this->rt->height() > this->lt->height() + 1)
 			return this->rotate_left(); 
 	}
-	this->h = max (this->lt->height(), this->rt->height()) + 1;
+	this->h = std::max (this->lt->height(), this->rt->height()) + 1;
 
 	return nullptr;
 }

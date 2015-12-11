@@ -28,8 +28,8 @@
 #include "bin_tree.h"
 #include "balanced_23_tree.h"
 #include "balanced_avl_tree.h"
+#include "trie.h"
 
-#define TEST_STDSET
 // #define TEST_LIST
 #define TEST_BIN
 #define TEST_23
@@ -43,13 +43,17 @@ int not_isalnum (int x) {
 	return !std::isalnum (x);
 }
 
+bool clear (int i) {
+	return (i+1)%CLEAR_INTERVAL == 0;
+}
+
 int main()
 {
 
-	// Parse words from a file...
 	// To implement also: 
 	// - A trie.
 	// - Red-black tree
+	// - A hash table
 	
 	ifstream *f;
 	f = new ifstream();
@@ -69,6 +73,11 @@ int main()
 	AVLTree<string>        *avl_tree    = new AVLEmpty<string>();
 	AVLTree<string>        *avl_node    = nullptr;
 
+	Trie<char>             *trie        = new Trie<char>('0');
+
+	char test_word[3] = {'a', 'b', 'c'};
+	trie->insert (test_word, 3);
+	
 	set<string> *std_set = new set<string>();
 	set<string>::iterator it;
 
@@ -76,7 +85,7 @@ int main()
 
 	assert (l->empty());
 
-	while (f->good() && (i < 9500)) {
+	while (f->good() && (i < 59500)) {
 		
 		*f >> word;
 		boost::algorithm::to_lower(word);
@@ -87,37 +96,22 @@ int main()
 		// cout << avl_tree->pp() << endl;
 		// cout << l->pp() << endl;
 
-		#ifdef TEST_STDSET
-			it = std_set->find(word);
-			if (it == std_set->end())
-				std_set->insert (word);
-			else
-				std_set->erase (it);
+		it = std_set->find(word);
+		if (it == std_set->end()) std_set->insert (word);
+		else                      std_set->erase  (it);
+		bool empty = (it == std_set->end());
 
-			if ((i+1)%CLEAR_INTERVAL == 0) {
-				cout << "Clearing std set..." << endl;
-				std_set->clear();
-			}
-		#endif
+		if (clear(i)) {
+			cout << "Clearing std set..." << endl;
+			std_set->clear();
+		}
 
 		#ifdef TEST_LIST
 			m = l->find(word);
-			bool empty = m->empty();
-			// cout << word << " result empty? " << empty << endl;
-			if (m->empty()) {
-				// delete m;
-				// cout << "Inserting: " << word << endl;
-				// int os = l->size();
-				list_insert (&l, word);
-				// l = l->insert(word);
-				// assert(l->size() == (os + 1));
-			} else {
-				// cout << "Removing: " << word << endl;
-				// int os = l->size();
-				list_remove (&l, word);
-				// assert(l->size() == (os - 1));
-			}
-			if ((i+1)%CLEAR_INTERVAL == 0) {
+			if (m->empty()) list_insert (&l, word);
+			else            list_remove (&l, word);
+
+			if (clear(i)) {
 				cout << "Clearing list..." << endl;
 				// m = nullptr;
 				// delete l;
@@ -129,24 +123,21 @@ int main()
 
 		#ifdef TEST_BIN
 			node = b->find(word);
-			#ifdef TEST_LIST
-			if (node->empty()) b = b->insert(word);
-			#endif
+			if (node->empty()) 
+				b = b->insert(word);
 		#endif
 
 		#ifdef TEST_23
 			if (bal_23_tree) bal_23_node = bal_23_tree->find(word);
-			#ifdef TEST_LIST
-				assert ((bal_23_node == nullptr) == empty);
-			#endif
+			assert ((bal_23_node == nullptr) == empty);
+
 			if (!bal_23_node)
 				balanced_23_tree_insert (&bal_23_tree, word);
 			else
 				balanced_23_tree_remove (&bal_23_tree, word);
 
-			if ((i+1)%CLEAR_INTERVAL == 0) {
+			if (clear(i)) {
 				cout << "Clearing 2-3 tree..." << endl;
-				// Empty the 23-tree
 				// delete bal_23_tree;
 				// bal_23_tree = new BalancedEmpty<string>();
 				while (!bal_23_tree->empty()) {
@@ -158,17 +149,13 @@ int main()
 		#endif
 
 		#ifdef TEST_AVL
-			// cout << avl_tree->pp() << endl;
 			avl_node = avl_tree->find(word);
-			#ifdef TEST_LIST
-				assert (avl_node->empty() == empty);
-			#endif
-			if (avl_node->empty()) {
-				avl_insert (&avl_tree, word);
-			} else {
-				avl_remove (&avl_tree, word);
-			}
-			if ((i+1)%CLEAR_INTERVAL == 0) {
+			assert (avl_node->empty() == empty);
+
+			if (avl_node->empty()) avl_insert (&avl_tree, word);
+			else                   avl_remove (&avl_tree, word);
+
+			if (clear(i)) {
 				cout << "Clearing AVL tree..." << endl;
 				while (!avl_tree->empty())
 					avl_release_max (&avl_tree);
@@ -182,12 +169,10 @@ int main()
 
 //	assert (avl_tree->size() == l->size());
 
-/*
-	cout << l->pp()        << endl << endl;
-	cout << b->pp()        << endl << endl;
-	cout << bal_23_tree->pp() << endl << endl;
-	cout << avl_tree->pp() << endl << endl;
-*/
+//	cout << l->pp()        << endl << endl;
+//	cout << b->pp()        << endl << endl;
+//	cout << bal_23_tree->pp() << endl << endl;
+//	cout << avl_tree->pp() << endl << endl;
 
 	// Report...
 	cout << "List steps: " << List<string>::steps << endl;
