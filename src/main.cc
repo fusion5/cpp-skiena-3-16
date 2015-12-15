@@ -34,6 +34,7 @@
 #define TEST_BIN
 #define TEST_23
 #define TEST_AVL
+#define TEST_TRIE
 
 #define CLEAR_INTERVAL 5000
 
@@ -64,20 +65,18 @@ int main()
 	List<string>           *l = new Empty<string>();
 	List<string>           *m = nullptr;
 
-	BinTree<string>        *b = new Leaf<string>();
+	BinTree<string>        *b = new BinEmpty<string>();
 	BinTree<string>        *node = nullptr;
 
 	Balanced23Tree<string> *bal_23_tree = new BalancedEmpty<string>();
 	Balanced23Tree<string> *bal_23_node = nullptr;
 
-	AVLTree<string>        *avl_tree    = new AVLEmpty<string>();
-	AVLTree<string>        *avl_node    = nullptr;
+	AVLTree<string, bool>  *avl_tree    = new AVLEmpty<string, bool>();
+	AVLTree<string, bool>  *avl_node    = nullptr;
 
-	Trie<char>             *trie        = new Trie<char>('0');
+	Trie<char>             *trie        = new Trie<char>();
+	Trie<char>             *trie_node   = nullptr;
 
-	char test_word[3] = {'a', 'b', 'c'};
-	trie->insert (test_word, 3);
-	
 	set<string> *std_set = new set<string>();
 	set<string>::iterator it;
 
@@ -85,13 +84,15 @@ int main()
 
 	assert (l->empty());
 
-	while (f->good() && (i < 59500)) {
+	while (f->good() && (i < 115500)) {
 		
 		*f >> word;
 		boost::algorithm::to_lower(word);
 		word.erase(
 		  std::remove_if ( word.begin(), word.end()
                                  , (int(*)(int)) not_isalnum ), word.end());
+
+		// cout << word << endl;
 
 		// cout << avl_tree->pp() << endl;
 		// cout << l->pp() << endl;
@@ -152,18 +153,49 @@ int main()
 			avl_node = avl_tree->find(word);
 			assert (avl_node->empty() == empty);
 
-			if (avl_node->empty()) avl_insert (&avl_tree, word);
-			else                   avl_remove (&avl_tree, word);
+			if (avl_node->empty()) 
+				avl_insert (&avl_tree, word, true);
+			else                   
+				avl_remove (&avl_tree, word);
 
 			if (clear(i)) {
 				cout << "Clearing AVL tree..." << endl;
 				while (!avl_tree->empty())
-					avl_release_max (&avl_tree);
+					delete avl_release_max (&avl_tree);
 				// delete avl_tree;
 				// avl_tree = new AVLEmpty<string>();
 			}
 
 		#endif
+
+		#ifdef TEST_TRIE
+			// Benchmark avl steps as trie steps because
+			// the trie uses the avl tree...
+			AVLTree<char, Trie<char>*>::p_steps = 
+			  &(Trie<char>::steps);
+
+			trie_node = trie->find(word.c_str(), word.size());
+			// cout << trie->pp()     << endl;
+			// cout << avl_tree->pp() << endl;
+			
+			assert ((trie_node == nullptr) == empty);
+			if (trie_node == nullptr)
+				trie->insert(word.c_str(), word.size());
+			else
+				trie->remove(word.c_str(), word.size());
+
+			if (clear(i)) {
+				cout << "Clearing Trie..." << endl;
+				delete trie;
+				trie = new Trie<char>();
+			}
+
+			/*
+			AVLTree<char, Trie<char>*>::p_steps = 
+			  &(AVLTree<char, Trie<char>*>::steps);
+			*/
+		#endif
+
 		i++;
 	}
 
@@ -175,25 +207,28 @@ int main()
 //	cout << avl_tree->pp() << endl << endl;
 
 	// Report...
-	cout << "List steps: " << List<string>::steps << endl;
-	cout << "BinTree steps: " << BinTree<string>::steps << endl;
-	cout << "Balanced 2-3 Tree steps: " 
+	cout << "*** Number of Steps" << endl;
+	cout << "List: " << List<string>::steps << endl;
+	cout << "BinTree: " << BinTree<string>::steps << endl;
+	cout << "Balanced 2-3 Tree: " 
 	     << Balanced23Tree<string>::steps << endl;
-	cout << "AVL Tree steps: " << AVLTree<string>::steps << endl;
+	cout << "AVL Tree: " << AVLTree<string, bool>::steps << endl;
+	cout << "Trie: " << Trie<char>::steps << endl;
 	
-	cout << "Total words: " << i 
-	     << "; set size: " 
-	     << std_set->size()
-	     << "; list size: " 
-	     << l->size() 
-	     << "; tree size: "
-	     << b->size()
-	     << "; balanced 2-3 tree size: "
-	     << bal_23_tree->size()
-	     << "; AVL tree size: "
-	     << avl_tree->size()
-	     << ", height " << avl_tree->height()
-	     << endl;
+	cout << "*** Total words: " << i << endl;
+	cout << "*** Sizes" << endl;
+	cout << "STL set: ";
+	cout << std_set->size() << endl;
+	cout << "List: "; 
+	cout << l->size() << endl; 
+	cout << "Binary tree: ";
+	cout << b->size() << endl;
+	cout << "Balanced 2-3 tree: ";
+	cout << bal_23_tree->size() << endl;
+	cout << "AVL tree size: ";
+	cout << avl_tree->size()
+	     << ", height " << avl_tree->height() << endl;
+	// cout << "Trie size: " << trie->size() << endl;
 
 	// Cleanup
 	if (l) delete l;
@@ -204,6 +239,7 @@ int main()
 
 	if (bal_23_tree) delete bal_23_tree;
 	if (avl_tree)    delete avl_tree;
+	if (trie)        delete trie;
 
 	f->close();
 	delete f;

@@ -5,111 +5,125 @@
 #include <boost/lexical_cast.hpp>
 #include <tuple>
 
+/*
+ * TODO: Refactoring: remove the AVLEmpty object and use AVLLeaf instead,
+ * it may be cleaner.
+ * */
 using namespace std;
 
-template <class T> class AVLTree;
+template <class K, class V> class AVLTree;
 
-template <class T>
+template <class K, class V>
 class AVLTree {
 	public: 
-		virtual ~AVLTree<T>               ()    = 0;
-		virtual AVLTree<T> *find          (T x) = 0;
-		virtual T          *max           ()    = 0;
-		virtual tuple<AVLTree<T>*, AVLTree<T>* >
-		                   release_max    ()    = 0;
-		virtual AVLTree<T> *remove        (T x) = 0;
-		virtual AVLTree<T> *insert        (T x) = 0;
-		virtual int        height         ()    = 0;
-		virtual T          *value         ()    = 0;
-		virtual bool       empty          ()    = 0;
-		virtual AVLTree<T> *left          ()    = 0;
-		virtual AVLTree<T> *right         ()    = 0;
-		virtual AVLTree<T> *release_right ()    = 0;
-		virtual AVLTree<T> *release_left  ()    = 0;
-		virtual void       replace_left   (AVLTree<T> *lt) = 0;
-		virtual void       replace_right  (AVLTree<T> *rt) = 0;
-		virtual string     pp             ()    = 0;
-		virtual int        size           ()    = 0;
-		static  int        steps;
+		virtual ~AVLTree<K,V>               ()    = 0;
+		virtual AVLTree<K,V> *find          (K x) = 0;
+		virtual K            *max           () = 0;
+		virtual tuple<AVLTree<K,V>*, AVLTree<K,V>* >
+		                     release_max    () = 0;
+		virtual AVLTree<K,V> *remove        (K x) = 0;
+		virtual AVLTree<K,V> *insert        (K x, V val) = 0;
+		virtual int          height         () = 0;
+		virtual K            *key           () = 0;
+		virtual V            *value         () = 0;
+		virtual bool         empty          () = 0;
+		virtual AVLTree<K,V> *left          () = 0;
+		virtual AVLTree<K,V> *right         () = 0;
+		virtual AVLTree<K,V> *release_right () = 0;
+		virtual AVLTree<K,V> *release_left  () = 0;
+		virtual void         replace_left   (AVLTree<K,V> *lt) = 0;
+		virtual void         replace_right  (AVLTree<K,V> *rt) = 0;
+		virtual string       pp             () = 0;
+		virtual int          size           () = 0;
+		static  int          steps;
+		static  int          *p_steps; // Pointer to steps variable
 	protected:
 	private:
-		unique_ptr<AVLTree<T> > lt;
-		unique_ptr<AVLTree<T> > rt;
+		unique_ptr<AVLTree<K,V> > lt;
+		unique_ptr<AVLTree<K,V> > rt;
 };
 
-template <class T>
-int AVLTree<T>::steps = 0;
+template <class K, class V>
+int AVLTree<K, V>::steps = 0;
 
-template <class T>
-class AVLNode: public AVLTree<T> {
+template <class K, class V>
+int *AVLTree<K, V>::p_steps = &(AVLTree<K, V>::steps);
+
+template <class K, class V>
+class AVLNode: public AVLTree<K, V> {
 	public:
-		AVLNode                   (AVLTree<T> *lt, AVLTree<T> *rt, T x);
+		AVLNode                   ( AVLTree<K, V> *lt, AVLTree<K, V> *rt
+		                          , K x, V val);
 		~AVLNode                  ();
-		AVLTree<T> *find          (T x);
-		T          *max           ();
-		tuple<AVLTree<T>*, AVLTree<T>* >
+		AVLTree<K, V> *find       (K x);
+		K          *max           ();
+		tuple<AVLTree<K, V>*, AVLTree<K, V>* >
 		           release_max    ();
-		AVLTree<T> *remove        (T x);
-		AVLTree<T> *insert        (T x);
+		AVLTree<K, V> *remove     (K x);
+		AVLTree<K, V> *insert     (K x, V val);
 		int        height         ();
-		T          *value         ();
+		K          *key           ();
+		V          *value         ();
 		bool       empty          ();
-		AVLTree<T> *left          ();
-		AVLTree<T> *right();
-		AVLTree<T> *release_left  ();
-		AVLTree<T> *release_right ();
-		void       replace_left   (AVLTree<T> *lt);
-		void       replace_right  (AVLTree<T> *rt);
+		AVLTree<K, V> *left       ();
+		AVLTree<K, V> *right      ();
+		AVLTree<K, V> *release_left  ();
+		AVLTree<K, V> *release_right ();
+		void       replace_left   (AVLTree<K, V> *lt);
+		void       replace_right  (AVLTree<K, V> *rt);
 		string     pp             ();
 		int        size           ();
 
 	protected:
 	private:
-		T          x;
+		K          x;
+		V          val;
 		int        h;
-		AVLTree<T> *rotate_left   ();
-		AVLTree<T> *rotate_right  ();
-		unique_ptr<AVLTree<T> > lt;
-		unique_ptr<AVLTree<T> > rt;
+		AVLTree<K, V> *rotate_left   ();
+		AVLTree<K, V> *rotate_right  ();
+		unique_ptr<AVLTree<K, V> > lt;
+		unique_ptr<AVLTree<K, V> > rt;
 };
 
-template <class T>
-class AVLEmpty: public AVLTree<T> {
+template <class K, class V>
+class AVLEmpty: public AVLTree<K, V> {
 	public:
 		AVLEmpty                  ();
 		~AVLEmpty                 ();
-		AVLTree<T> *find          (T x);
-		T          *max           ();
-		tuple<AVLTree<T>*, AVLTree<T>* >
+		AVLTree<K, V> *find       (K x);
+		K          *max           ();
+		tuple<AVLTree<K, V>*, AVLTree<K, V>* >
 		           release_max    ();
-		AVLTree<T> *remove        (T x);
-		AVLTree<T> *insert        (T x);
+		AVLTree<K, V> *remove     (K x);
+		AVLTree<K, V> *insert     (K x, V val);
 		int        height         ();
-		T          *value         ();
+		K          *key           ();
+		V          *value         ();
 		bool       empty          ();
-		AVLTree<T> *left          ();
-		AVLTree<T> *right         ();
-		AVLTree<T> *release_left  ();
-		AVLTree<T> *release_right ();
-		void       replace_left   (AVLTree<T> *lt);
-		void       replace_right  (AVLTree<T> *rt);
+		AVLTree<K, V> *left       ();
+		AVLTree<K, V> *right      ();
+		AVLTree<K, V> *release_left  ();
+		AVLTree<K, V> *release_right ();
+		void       replace_left   (AVLTree<K, V> *lt);
+		void       replace_right  (AVLTree<K, V> *rt);
 		string     pp             ();
 		int        size           ();
 	private:
-		unique_ptr<AVLTree<T> > lt;
-		unique_ptr<AVLTree<T> > rt;
+		unique_ptr<AVLTree<K, V> > lt;
+		unique_ptr<AVLTree<K, V> > rt;
 };
 
 /* ctors */
-template <class T>
-AVLNode<T>::AVLNode (AVLTree<T> *lt, AVLTree<T> *rt, T x) {
-	this->lt = unique_ptr<AVLTree<T> >(lt);
-	this->rt = unique_ptr<AVLTree<T> >(rt);
-	this->x  = x;
-	this->h  = std::max (lt->height(), rt->height()) + 1;
+template <class K, class V>
+AVLNode<K, V>::AVLNode (AVLTree<K, V> *lt, AVLTree<K, V> *rt, K x, V val) {
+	this->lt  = unique_ptr<AVLTree<K, V> >(lt);
+	this->rt  = unique_ptr<AVLTree<K, V> >(rt);
+	this->x   = x;
+	this->val = val;
+	this->h   = std::max (lt->height(), rt->height()) + 1;
 }
-template <class T>
-AVLEmpty<T>::AVLEmpty() {
+template <class K, class V>
+AVLEmpty<K, V>::AVLEmpty() {
 	this->lt = nullptr;
 	this->rt = nullptr;
 }
@@ -117,8 +131,8 @@ AVLEmpty<T>::AVLEmpty() {
 /* Rotate left, right... 
  * These methods leave the object unusable, they should be called only before 
  * it's de-allocated... */
-template <class T>
-AVLTree<T> *AVLNode<T>::rotate_right() {
+template <class K, class V>
+AVLTree<K, V> *AVLNode<K, V>::rotate_right() {
 	/*
 	   this          l 
 	   / \          / \
@@ -135,27 +149,27 @@ AVLTree<T> *AVLNode<T>::rotate_right() {
 	// 'this' will be deallocated, so make sure it doesn't
 	// hold anything...
 	
-	AVLTree<T> *l = this->release_left();
-	AVLTree<T> *r = this->release_right();
+	AVLTree<K, V> *l = this->release_left();
+	AVLTree<K, V> *r = this->release_right();
 
 	assert (this->lt->empty());
 	assert (this->rt->empty());
 
-	AVLTree<T> *lr = l->release_right();
+	AVLTree<K, V> *lr = l->release_right();
 
 	assert (this->left()->empty());
 	assert (this->lt->empty());
 	assert (l->right()->empty());
 
-	l->replace_right (new AVLNode<T>(lr, r, this->x));
+	l->replace_right (new AVLNode<K, V>(lr, r, this->x, this->val));
 
 	assert (!l->right()->empty());
 
 	return l;
 }
 
-template <class T>
-AVLTree<T> *AVLNode<T>::rotate_left() {
+template <class K, class V>
+AVLTree<K, V> *AVLNode<K, V>::rotate_left() {
 	// cout << this->x << " rotate right" << endl;
 	// Rotate by creating a copy...
 	/*
@@ -168,18 +182,18 @@ AVLTree<T> *AVLNode<T>::rotate_left() {
 	this->h = std::max (this-> left()->height(),
 	  this->right()->left()->height()) + 1;
 	
-	AVLTree<T> *l = this->release_left();
-	AVLTree<T> *r = this->release_right();
+	AVLTree<K, V> *l = this->release_left();
+	AVLTree<K, V> *r = this->release_right();
 
-	AVLTree<T> *rl = r->release_left();
-	AVLTree<T> *newthis = new AVLNode<T>(l, rl, this->x);
+	AVLTree<K, V> *rl = r->release_left();
+	AVLTree<K, V> *newthis = new AVLNode<K, V>(l, rl, this->x, this->val);
 
 	r->replace_left (newthis);
 
 	assert (!r->left()->empty());
 
 	assert (newthis == r->left());
-	assert (*(newthis->value()) == *(this->value()));
+	assert (*(newthis->key()) == *(this->key()));
 
 	assert (this->lt->empty());
 	assert (this->rt->empty());
@@ -187,158 +201,167 @@ AVLTree<T> *AVLNode<T>::rotate_left() {
 	return r;
 }
 
-
 /* dtors */
-template <class T>
-AVLTree<T>::~AVLTree() { }
-template <class T>
-AVLNode<T>::~AVLNode() {
+template <class K, class V>
+AVLTree<K, V>::~AVLTree() { }
+template <class K, class V>
+AVLNode<K, V>::~AVLNode() {
 }
-template <class T>
-AVLEmpty<T>::~AVLEmpty() {
+template <class K, class V>
+AVLEmpty<K, V>::~AVLEmpty() {
 }
 
-template <class T>
-T *AVLNode<T>::max() {
+template <class K, class V>
+K *AVLNode<K, V>::max() {
 	if (this->rt->empty())
 		return &(this->x);
 	return this->rt->max();
 }
-template <class T>
-T *AVLEmpty<T>::max() {
+template <class K, class V>
+K *AVLEmpty<K, V>::max() {
 	assert(false);
 }
 /* release_left */
-template <class T>
-AVLTree<T> *AVLNode<T>::release_left(){
+template <class K, class V>
+AVLTree<K, V> *AVLNode<K, V>::release_left() {
 	assert(this->lt);
-	AVLTree<T> *r = this->lt.release();
-	this->lt.reset(new AVLEmpty<T>());
+	AVLTree<K, V> *r = this->lt.release();
+	this->lt.reset(new AVLEmpty<K, V>());
 	this->h  = this->right()->height() + 1;
 	return r;
 }
-template <class T>
-AVLTree<T> *AVLEmpty<T>::release_left() {
-	cerr << "Calling release_left() on an empty node!" << endl;
-	throw "error";
+template <class K, class V>
+AVLTree<K, V> *AVLEmpty<K, V>::release_left() {
+	assert (false);
 }
 
 /* release_right */
-template <class T>
-AVLTree<T> *AVLNode<T>::release_right(){
+template <class K, class V>
+AVLTree<K, V> *AVLNode<K, V>::release_right(){
 	assert(this->rt);
-	AVLTree<T> *r = this->rt.release();
-	this->rt.reset(new AVLEmpty<T>());
+	AVLTree<K, V> *r = this->rt.release();
+	this->rt.reset(new AVLEmpty<K, V>());
 	this->h = this->left()->height() + 1;
 	return r;
 }
-template <class T>
-AVLTree<T> *AVLEmpty<T>::release_right() {
+template <class K, class V>
+AVLTree<K, V> *AVLEmpty<K, V>::release_right() {
 	cerr << "Calling release_right() on an empty node!" << endl;
 	throw "error";
 }
 
 /* replace_left */
-template <class T>
-void AVLNode<T>::replace_left(AVLTree<T> *lt) {
+template <class K, class V>
+void AVLNode<K, V>::replace_left(AVLTree<K, V> *lt) {
 	assert(this->lt);
 	this->lt.reset(lt);
 }
-template <class T>
-void AVLEmpty<T>::replace_left(AVLTree<T> *lt) {
+template <class K, class V>
+void AVLEmpty<K, V>::replace_left(AVLTree<K, V> *lt) {
 	cerr << "Calling replace_left() on an empty node!" << endl;
 	throw "error";
 }
 
 /* replace_right */
-template <class T>
-void AVLNode<T>::replace_right(AVLTree<T> *rt) {
+template <class K, class V>
+void AVLNode<K, V>::replace_right(AVLTree<K, V> *rt) {
 	assert(this->rt);
 	this->rt.reset(rt);
 }
-template <class T>
-void AVLEmpty<T>::replace_right(AVLTree<T> *rt) {
+template <class K, class V>
+void AVLEmpty<K, V>::replace_right(AVLTree<K, V> *rt) {
 	cerr << "Calling replace_right() on an empty node!" << endl;
 	throw "error";
 }
 
 /* left */
-template <class T>
-AVLTree<T> *AVLNode<T>::left() {
+template <class K, class V>
+AVLTree<K, V> *AVLNode<K, V>::left() {
 	assert(this->lt);
 	return this->lt.get();
 }
-template <class T>
-AVLTree<T> *AVLEmpty<T>::left() {
+template <class K, class V>
+AVLTree<K, V> *AVLEmpty<K, V>::left() {
 	cerr << "Calling left() on an empty node!" << endl;
 	// return nullptr;
 	throw "error";
 }
 
 /* right */
-template <class T>
-AVLTree<T> *AVLNode<T>::right() {
+template <class K, class V>
+AVLTree<K, V> *AVLNode<K, V>::right() {
 	assert(this->rt);
 	return this->rt.get();
 }
-template <class T>
-AVLTree<T> *AVLEmpty<T>::right() {
+template <class K, class V>
+AVLTree<K, V> *AVLEmpty<K, V>::right() {
 	cerr << "Calling right() on an empty node!" << endl;
 	throw "error";
 }
 
 /* pp, pretty print */
-template <class T>
-string AVLNode<T>::pp() {
+template <class K, class V>
+string AVLNode<K, V>::pp() {
 	assert(this->lt);
 	assert(this->rt);
 	return "(Node " 
 		+ this->lt->pp() + ", " 
-		+ *(this->value()) + ", "
+		+ *(this->key()) + "="
+		+ boost::lexical_cast<std::string>(*(this->value())) + ", "
 		+ this->rt->pp() + ")";
 }
-template <class T>
-string AVLEmpty<T>::pp() {
+template <class K, class V>
+string AVLEmpty<K, V>::pp() {
 	return "Empty";
 }
 
 /* size */
-template <class T>
-int AVLNode<T>::size() {
+template <class K, class V>
+int AVLNode<K, V>::size() {
 	assert(this->lt);
 	assert(this->rt);
-	AVLTree<T>::steps++;
+	(*(AVLTree<K, V>::p_steps))++;
 	return 1 + this->lt->size() + this->rt->size();
 }
-template <class T>
-int AVLEmpty<T>::size() {
+template <class K, class V>
+int AVLEmpty<K, V>::size() {
 	return 0;
 }
 
 /* value */
-template <class T>
-T *AVLNode<T>::value() {
+template <class K, class V>
+V *AVLNode<K, V>::value() {
+	return &(this->val);
+}
+template <class K, class V>
+V *AVLEmpty<K, V>::value() {
+	assert(false);
+	throw "error";
+}
+/* key */
+template <class K, class V>
+K *AVLNode<K, V>::key() {
 	return &(this->x);
 }
-template <class T>
-T *AVLEmpty<T>::value() {
-	cerr << "Calling value() on an empty node!" << endl;
+template <class K, class V>
+K *AVLEmpty<K, V>::key() {
+	assert(false);
 	throw "error";
 }
 
 /* empty */
-template <class T>
-bool AVLNode<T>::empty() { return false; }
-template <class T>
-bool AVLEmpty<T>::empty() { return true; }
+template <class K, class V>
+bool AVLNode<K, V>::empty() { return false; }
+template <class K, class V>
+bool AVLEmpty<K, V>::empty() { return true; }
 
 /* height */
-template <class T>
-int AVLNode<T>::height() {
+template <class K, class V>
+int AVLNode<K, V>::height() {
 	return this->h;
 }
-template <class T>
-int AVLEmpty<T>::height() {
+template <class K, class V>
+int AVLEmpty<K, V>::height() {
 	return 0;
 }
 
@@ -347,22 +370,22 @@ int AVLEmpty<T>::height() {
  * - nullptr if there is nothing to do
  * - a node pointer with which to replace myself (this)
  * */
-template <class T>
-AVLTree<T> *AVLNode<T>::remove(T x) {
-	AVLTree<T>::steps++;
+template <class K, class V>
+AVLTree<K, V> *AVLNode<K, V>::remove(K x) {
+	(*(AVLTree<K, V>::p_steps))++;
 	assert (this->lt);
 	assert (this->rt);
 	
 	if (x == this->x) {
-		// Remove myself... we know that the balance will be checked up
-		// the chain, and that heights will be adjusted as necessary.
+		// Remove myself... the balance will be checked up
+		// the chain; heights will be adjusted as necessary.
 		
 		if (this->left()->empty() && this->right()->empty())
-			return new AVLEmpty<T>(); // I'm a leaf, just remove me
+			return new AVLEmpty<K, V>(); // I'm a leaf, remove me
 		else if (this->left()->empty())
 			return this->release_right(); // Only got a right subtree
 		else if (this->right()->empty()) {
-			AVLTree<T> *ret = this->release_left();
+			AVLTree<K, V> *ret = this->release_left();
 			// delete this->release_right();
 			return ret; // Only got a left subtree
 		}
@@ -374,8 +397,8 @@ AVLTree<T> *AVLNode<T>::remove(T x) {
 			// Return the rightmost leaf in the left subtree, 
 			// and release it.
 
-			AVLTree<T> *lmax;
-			AVLTree<T> *replacement;
+			AVLTree<K, V> *lmax;
+			AVLTree<K, V> *replacement;
 
 			// TODO: make code prettier
 			tie (replacement, lmax) = this->left()->release_max();
@@ -390,10 +413,10 @@ AVLTree<T> *AVLNode<T>::remove(T x) {
 			assert (lmax->right()->empty());
 			// Then, release my own children and give them to lmax
 			
-			assert (*(lmax->value()) < this->x);
-			assert (this->x < *(this->right()->value()));
+			assert (*(lmax->key()) < this->x);
+			assert (this->x < *(this->right()->key()));
 			assert (this->left()->empty() 
-			       || (*(lmax->value()) > *(this->left()->value())));
+			       || (*(lmax->key()) > *(this->left()->key())));
 
 			lmax->replace_right(this->release_right());
 			lmax->replace_left(this->release_left());
@@ -406,7 +429,7 @@ AVLTree<T> *AVLNode<T>::remove(T x) {
 	}
 
 	if (x < this->x) {
-		AVLTree<T> *result;
+		AVLTree<K, V> *result;
 		result = this->left()->remove(x);
 		if (result) this->replace_left(result);
 		// We have potentially removed a node in our lt...
@@ -417,7 +440,7 @@ AVLTree<T> *AVLNode<T>::remove(T x) {
 	}
 
 	if (x > this->x) {
-		AVLTree<T> *result;
+		AVLTree<K, V> *result;
 		result = this->right()->remove(x);
 		if (result) this->replace_right (result);
 		// We have potentially removed a node in our rt,
@@ -433,55 +456,54 @@ AVLTree<T> *AVLNode<T>::remove(T x) {
 	// Nothing to do upwards in the tree...
 	return nullptr;
 }
-template <class T> 
-AVLTree<T> *AVLEmpty<T>::remove(T x) {
+template <class K, class V> 
+AVLTree<K, V> *AVLEmpty<K, V>::remove(K x) {
 	// Trying to delete a value that hasn't been found in the tree, do nothing
 	return nullptr;
 }
 
 /* release_max 
- * - parameters: the parent's node and whether or not this is a rhs child
  * - returns a tuple of (node*, node*)
  *     - The left member is the new value that should replace me, or nullptr; 
  *     - The right member is the maximum node that was found and removed.
  * */
-template <class T>
-tuple<AVLTree<T>*, AVLTree<T>*> AVLNode<T>::release_max() {
-	AVLTree<T>::steps++;
+template <class K, class V>
+tuple<AVLTree<K, V>*, AVLTree<K, V>*> AVLNode<K, V>::release_max() {
+	(*(AVLTree<K, V>::p_steps))++;
 	if (this->right()->empty()) {
 		// delete this->rt.release();
 		return make_tuple (this->release_left(), nullptr);
 	}
 
-	AVLTree<T> *replacement;
-	AVLTree<T> *maximum;
+	AVLTree<K, V> *replacement;
+	AVLTree<K, V> *maximum;
 	tie (replacement, maximum) = this->right()->release_max();
-	if (replacement != nullptr) {
+	if (replacement) {
 		assert (maximum == nullptr);
 		maximum = this->release_right();
 		this->replace_right (replacement);
 	}
 	return make_tuple (nullptr, maximum);
 }
-template <class T>
-tuple<AVLTree<T>*, AVLTree<T>*> AVLEmpty<T>::release_max() {
+template <class K, class V>
+tuple<AVLTree<K, V>*, AVLTree<K, V>*> AVLEmpty<K, V>::release_max() {
 	cerr << "Calling release_max() on an empty node!" << endl;
-	throw "error";
+	assert (false);
 }
 
 /* find */
-template <class T>
-AVLTree<T> *AVLNode<T>::find(T x) {
+template <class K, class V>
+AVLTree<K, V> *AVLNode<K, V>::find(K x) {
 	assert(this->lt);
 	assert(this->rt);
-	AVLTree<T>::steps++;
+	(*(AVLTree<K, V>::p_steps))++;
 	if (this->x == x) return this;
 	if (x < this->x)  return this->lt->find(x);
 	if (x > this->x)  return this->rt->find(x);
 }
-template <class T>
-AVLTree<T> *AVLEmpty<T>::find(T x) {
-	AVLTree<T>::steps++;
+template <class K, class V>
+AVLTree<K, V> *AVLEmpty<K, V>::find(K x) {
+	(*(AVLTree<K, V>::p_steps))++;
 	return this;
 }
 
@@ -491,9 +513,9 @@ AVLTree<T> *AVLEmpty<T>::find(T x) {
  *   - a new node to replace the subtree, or 
  *   - nullptr if nothing should be replaced...
  */
-template <class T>
-AVLTree<T> *AVLNode<T>::insert(T x) {
-	AVLTree<T>::steps++;
+template <class K, class V>
+AVLTree<K, V> *AVLNode<K, V>::insert(K x, V val) {
+	(*(AVLTree<K, V>::p_steps))++;
 	// Inserting to an already existing value, do nothing...
 	if (x == this->x) return nullptr;
 
@@ -501,7 +523,7 @@ AVLTree<T> *AVLNode<T>::insert(T x) {
 	assert(this->rt);
 
 	if (x < this->x) {
-		AVLTree<T> *result = this->lt->insert (x);
+		AVLTree<K, V> *result = this->lt->insert (x, val);
 		if (result) this->replace_left(result);
 
 		// Are we heavy on the left side after the insertion?
@@ -509,7 +531,7 @@ AVLTree<T> *AVLNode<T>::insert(T x) {
 			return this->rotate_right();
 	} else {
 		assert (x > this->x);
-		AVLTree<T> *result = this->rt->insert (x);
+		AVLTree<K, V> *result = this->rt->insert (x, val);
 		if (result) this->replace_right(result);
 
 		// Are we heavy on the right side after the insertion?
@@ -520,36 +542,36 @@ AVLTree<T> *AVLNode<T>::insert(T x) {
 
 	return nullptr;
 }
-template <class T>
-AVLTree<T> *AVLEmpty<T>::insert (T x) {
-	AVLTree<T>::steps++;
-	return new AVLNode<T>(new AVLEmpty(), new AVLEmpty(), x);
+template <class K, class V>
+AVLTree<K, V> *AVLEmpty<K, V>::insert (K x, V val) {
+	(*(AVLTree<K, V>::p_steps))++;
+	return new AVLNode<K, V>(new AVLEmpty(), new AVLEmpty(), x, val);
 }
 
-template <class T>
-void avl_insert (AVLTree<T> **t, T x) {
-	AVLTree<T> *r = (*t)->insert (x);
+template <class K, class V>
+void avl_insert (AVLTree<K, V> **t, K x, V val) {
+	AVLTree<K, V> *r = (*t)->insert (x, val);
 	if (r != nullptr) {
 		delete *t;
 		*t = r;
 	}
 }
 
-template <class T>
-void avl_remove (AVLTree<T> **t, T x) {
+template <class K, class V>
+void avl_remove (AVLTree<K, V> **t, K x) {
 	if ((*t)->empty()) return;
-	AVLTree<T> *r = (*t)->remove (x);
+	AVLTree<K, V> *r = (*t)->remove (x);
 	if (r != nullptr) {
 		delete *t;
 		*t = r;
 	}
 }
 
-template <class T>
-T avl_release_max (AVLTree<T> **t) {
-	AVLTree<T> *replacement;
-	AVLTree<T> *maximum;
-	T ret;
+template <class K, class V>
+AVLTree<K, V> *avl_release_max (AVLTree<K, V> **t) {
+	AVLTree<K, V> *replacement;
+	AVLTree<K, V> *maximum;
+	// K ret;
 
 	tie (replacement, maximum) = (*t)->release_max();
 	if (replacement != nullptr) {
@@ -558,9 +580,9 @@ T avl_release_max (AVLTree<T> **t) {
 	}
 	assert (maximum != nullptr);
 
-	ret = *(maximum->value());
-	delete maximum;
-	return ret;
+	// ret = *(maximum->key());
+	return maximum;
+	// return ret;
 }
 
 #endif
