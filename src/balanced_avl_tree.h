@@ -5,10 +5,6 @@
 #include <boost/lexical_cast.hpp>
 #include <tuple>
 
-/*
- * TODO: Refactoring: remove the AVLEmpty object and use AVLLeaf instead,
- * it may be cleaner.
- * */
 using namespace std;
 
 template <class K, class V> class AVLTree;
@@ -19,7 +15,7 @@ class AVLTree {
 		virtual ~AVLTree<K,V>               ()    = 0;
 		virtual AVLTree<K,V> *find          (K x) = 0;
 		virtual K            *max           () = 0;
-		virtual tuple<AVLTree<K,V>*, AVLTree<K,V>* >
+		virtual tuple<AVLTree<K,V>*, K, V>
 		                     release_max    () = 0;
 		virtual AVLTree<K,V> *remove        (K x) = 0;
 		virtual AVLTree<K,V> *insert        (K x, V val) = 0;
@@ -57,7 +53,7 @@ class AVLNode: public AVLTree<K, V> {
 		~AVLNode                  ();
 		AVLTree<K, V> *find       (K x);
 		K          *max           ();
-		tuple<AVLTree<K, V>*, AVLTree<K, V>* >
+		tuple<AVLTree<K, V>*, K, V>
 		           release_max    ();
 		AVLTree<K, V> *remove     (K x);
 		AVLTree<K, V> *insert     (K x, V val);
@@ -92,7 +88,7 @@ class AVLEmpty: public AVLTree<K, V> {
 		~AVLEmpty                 ();
 		AVLTree<K, V> *find       (K x);
 		K          *max           ();
-		tuple<AVLTree<K, V>*, AVLTree<K, V>* >
+		tuple<AVLTree<K, V>*, K, V>
 		           release_max    ();
 		AVLTree<K, V> *remove     (K x);
 		AVLTree<K, V> *insert     (K x, V val);
@@ -127,6 +123,14 @@ AVLEmpty<K, V>::AVLEmpty() {
 	this->lt = nullptr;
 	this->rt = nullptr;
 }
+
+/* dtors */
+template <class K, class V>
+AVLTree<K, V> ::~AVLTree()  { }
+template <class K, class V>
+AVLNode<K, V> ::~AVLNode()  { }
+template <class K, class V>
+AVLEmpty<K, V>::~AVLEmpty() { }
 
 /* Rotate left, right... 
  * These methods leave the object unusable, they should be called only before 
@@ -201,15 +205,7 @@ AVLTree<K, V> *AVLNode<K, V>::rotate_left() {
 	return r;
 }
 
-/* dtors */
-template <class K, class V>
-AVLTree<K, V>::~AVLTree() { }
-template <class K, class V>
-AVLNode<K, V>::~AVLNode() {
-}
-template <class K, class V>
-AVLEmpty<K, V>::~AVLEmpty() {
-}
+
 
 template <class K, class V>
 K *AVLNode<K, V>::max() {
@@ -367,7 +363,7 @@ int AVLEmpty<K, V>::height() {
 
 /* remove 
  * returns:
- * - nullptr if there is nothing to do
+ * - 'this' if there is nothing to do...
  * - a node pointer with which to replace myself (this)
  * */
 template <class K, class V>
@@ -385,11 +381,8 @@ AVLTree<K, V> *AVLNode<K, V>::remove(K x) {
 		else if (this->left()->empty())
 			return this->release_right(); // Only got a right subtree
 		else if (this->right()->empty()) {
-			AVLTree<K, V> *ret = this->release_left();
-			// delete this->release_right();
-			return ret; // Only got a left subtree
-		}
-		else {
+			return this->release_left();
+		} else {
 			// Neither is empty...
 			assert (!(this->left()->empty()));
 			assert (!(this->right()->empty()));
@@ -397,41 +390,29 @@ AVLTree<K, V> *AVLNode<K, V>::remove(K x) {
 			// Return the rightmost leaf in the left subtree, 
 			// and release it.
 
-			AVLTree<K, V> *lmax;
+			K kmax;
+			V vmax;
 			AVLTree<K, V> *replacement;
 
-			// TODO: make code prettier
-			tie (replacement, lmax) = this->left()->release_max();
-
-			if (replacement != nullptr) {
-				// the maximum is my left node
-				assert (lmax == nullptr);
-				lmax = this->release_left();
+			tie (replacement, kmax, vmax) = this->left()->release_max();
+			if (replacement != this->left())
 				this->replace_left(replacement);
-			}
-			assert (lmax->left()->empty());
-			assert (lmax->right()->empty());
 			// Then, release my own children and give them to lmax
 			
-			assert (*(lmax->key()) < this->x);
+			assert (kmax < this->x);
 			assert (this->x < *(this->right()->key()));
 			assert (this->left()->empty() 
-			       || (*(lmax->key()) > *(this->left()->key())));
+			       || kmax > *(this->left()->key()));
 
-			lmax->replace_right(this->release_right());
-			lmax->replace_left(this->release_left());
-			
-			// I will be deallocated by my parent and replaced with
-			// lmax... this ensures a correct ordering in the
-			// resulting subtree.
-			return lmax;
+			return new AVLNode(this->release_left(), 
+			  this->release_right(), kmax, vmax);
 		}
 	}
 
 	if (x < this->x) {
 		AVLTree<K, V> *result;
 		result = this->left()->remove(x);
-		if (result) this->replace_left(result);
+		if (result != this->left()) this->replace_left(result);
 		// We have potentially removed a node in our lt...
 		// Check if a rebalancing is needed, adjust heights.
 		// Are we heavy on the rhs?
@@ -442,7 +423,7 @@ AVLTree<K, V> *AVLNode<K, V>::remove(K x) {
 	if (x > this->x) {
 		AVLTree<K, V> *result;
 		result = this->right()->remove(x);
-		if (result) this->replace_right (result);
+		if (result != this->right()) this->replace_right (result);
 		// We have potentially removed a node in our rt,
 		// Check if a rebalancing is needed, adjust heights.
 		// If no rebalancing is needed here return 'this'
@@ -454,12 +435,13 @@ AVLTree<K, V> *AVLNode<K, V>::remove(K x) {
 	this->h = std::max (this->rt->height(), this->lt->height()) + 1;
 	
 	// Nothing to do upwards in the tree...
-	return nullptr;
+	return this;
 }
 template <class K, class V> 
 AVLTree<K, V> *AVLEmpty<K, V>::remove(K x) {
 	// Trying to delete a value that hasn't been found in the tree, do nothing
-	return nullptr;
+	assert (false);
+	return this;
 }
 
 /* release_max 
@@ -468,25 +450,23 @@ AVLTree<K, V> *AVLEmpty<K, V>::remove(K x) {
  *     - The right member is the maximum node that was found and removed.
  * */
 template <class K, class V>
-tuple<AVLTree<K, V>*, AVLTree<K, V>*> AVLNode<K, V>::release_max() {
+tuple<AVLTree<K, V>*, K, V> AVLNode<K, V>::release_max() {
 	(*(AVLTree<K, V>::p_steps))++;
 	if (this->right()->empty()) {
 		// delete this->rt.release();
-		return make_tuple (this->release_left(), nullptr);
+		return make_tuple (this->release_left(), *(this->key()), 
+		  *(this->value()));
 	}
 
 	AVLTree<K, V> *replacement;
-	AVLTree<K, V> *maximum;
-	tie (replacement, maximum) = this->right()->release_max();
-	if (replacement) {
-		assert (maximum == nullptr);
-		maximum = this->release_right();
+	K k; V v;
+	tie (replacement, k, v) = this->right()->release_max();
+	if (replacement != this->right())
 		this->replace_right (replacement);
-	}
-	return make_tuple (nullptr, maximum);
+	return make_tuple (this, k, v);
 }
 template <class K, class V>
-tuple<AVLTree<K, V>*, AVLTree<K, V>*> AVLEmpty<K, V>::release_max() {
+tuple<AVLTree<K, V>*, K, V> AVLEmpty<K, V>::release_max() {
 	cerr << "Calling release_max() on an empty node!" << endl;
 	assert (false);
 }
@@ -561,28 +541,25 @@ template <class K, class V>
 void avl_remove (AVLTree<K, V> **t, K x) {
 	if ((*t)->empty()) return;
 	AVLTree<K, V> *r = (*t)->remove (x);
-	if (r != nullptr) {
+	if (r != *t) {
 		delete *t;
 		*t = r;
 	}
 }
 
 template <class K, class V>
-AVLTree<K, V> *avl_release_max (AVLTree<K, V> **t) {
+tuple<K, V> avl_release_max (AVLTree<K, V> **t) {
+	assert (!(*t)->empty());
 	AVLTree<K, V> *replacement;
-	AVLTree<K, V> *maximum;
-	// K ret;
+	K k;
+	V v;
 
-	tie (replacement, maximum) = (*t)->release_max();
-	if (replacement != nullptr) {
-		maximum = *t;
+	tie (replacement, k, v) = (*t)->release_max();
+	if (replacement != *t) {
+		delete *t;
 		*t = replacement;
 	}
-	assert (maximum != nullptr);
-
-	// ret = *(maximum->key());
-	return maximum;
-	// return ret;
+	return make_tuple (k, v);
 }
 
 #endif

@@ -45,16 +45,16 @@ int not_isalnum (int x) {
 }
 
 bool clear (int i) {
+	return false;
 	return (i+1)%CLEAR_INTERVAL == 0;
 }
 
 int main()
 {
-
 	// To implement also: 
-	// - A trie.
-	// - Red-black tree
-	// - A hash table
+	// - A trie         [x]
+	// - A hash table   []
+	// - Red-black tree []
 	
 	ifstream *f;
 	f = new ifstream();
@@ -77,6 +77,7 @@ int main()
 	Trie<char>             *trie        = new Trie<char>();
 	Trie<char>             *trie_node   = nullptr;
 
+
 	set<string> *std_set = new set<string>();
 	set<string>::iterator it;
 
@@ -84,7 +85,7 @@ int main()
 
 	assert (l->empty());
 
-	while (f->good() && (i < 115500)) {
+	while (f->good() /* && (i < 5500)*/) {
 		
 		*f >> word;
 		boost::algorithm::to_lower(word);
@@ -123,9 +124,25 @@ int main()
 		#endif
 
 		#ifdef TEST_BIN
+			// cout << "w: " << word << endl;
+			// cout << b->pp() << endl;
+
 			node = b->find(word);
-			if (node->empty()) 
-				b = b->insert(word);
+			if (node->empty()) {
+				// cout << "insert " << word << endl;
+				bintree_insert (&b, word);
+			} else {
+				// cout << "remove " << word << endl;
+				bintree_remove (&b, word);
+			}
+
+			if (clear(i)) {
+				cout << "Clearing bintree..." << endl;
+				// delete b;
+				// b = new BinEmpty<string>();
+				while (!b->empty())
+					bintree_release_max (&b);
+			}
 		#endif
 
 		#ifdef TEST_23
@@ -159,11 +176,12 @@ int main()
 				avl_remove (&avl_tree, word);
 
 			if (clear(i)) {
+				tuple<string, bool> res;
 				cout << "Clearing AVL tree..." << endl;
 				while (!avl_tree->empty())
-					delete avl_release_max (&avl_tree);
+					res = avl_release_max (&avl_tree);
 				// delete avl_tree;
-				// avl_tree = new AVLEmpty<string>();
+				// avl_tree = new AVLEmpty<string, bool>();
 			}
 
 		#endif
@@ -174,22 +192,28 @@ int main()
 			AVLTree<char, Trie<char>*>::p_steps = 
 			  &(Trie<char>::steps);
 
-			trie_node = trie->find(word.c_str(), word.size());
+			const char* xs;
+			xs    = word.c_str();
+			int n = word.size();
+
+			trie_node = trie->find(xs, n);
 			// cout << trie->pp()     << endl;
 			// cout << avl_tree->pp() << endl;
 			
 			assert ((trie_node == nullptr) == empty);
 			if (trie_node == nullptr)
-				trie->insert(word.c_str(), word.size());
+				trie->insert(xs, n);
 			else
-				trie->remove(word.c_str(), word.size());
+				trie->remove(xs, n);
 
 			if (clear(i)) {
+				// TODO: add release max...
 				cout << "Clearing Trie..." << endl;
 				delete trie;
 				trie = new Trie<char>();
 			}
 
+			// delete xs;
 			/*
 			AVLTree<char, Trie<char>*>::p_steps = 
 			  &(AVLTree<char, Trie<char>*>::steps);
@@ -228,15 +252,12 @@ int main()
 	cout << "AVL tree size: ";
 	cout << avl_tree->size()
 	     << ", height " << avl_tree->height() << endl;
-	// cout << "Trie size: " << trie->size() << endl;
+	cout << "Trie size: " << trie->size() << endl;
 
 	// Cleanup
-	if (l) delete l;
-
-	if (b) delete b;
-
-	delete std_set;
-
+	if (l)           delete l;
+	if (b)           delete b;
+	if (std_set)     delete std_set;
 	if (bal_23_tree) delete bal_23_tree;
 	if (avl_tree)    delete avl_tree;
 	if (trie)        delete trie;

@@ -18,10 +18,10 @@ class Trie {
 		bool    empty   ();
 		T       *value  ();
 		T       *max    ();
-		T       x;
 		string  pp      ();
 		int     size    ();
 		bool    present;
+		T       x;
 	private:
 		unique_ptr <AVLTree<T, Trie<T>*> > xs;
 		int n;
@@ -35,8 +35,7 @@ template <class T>
 Trie<T>::Trie (T x) {
 	this->x = x;
 	this->present = false;
-	this->xs = unique_ptr<AVLTree<T, Trie<T>*> >(
-	  new AVLEmpty<T, Trie<T>*>());
+	this->xs = unique_ptr<AVLTree<T, Trie<T>*> >(new AVLEmpty<T, Trie<T>*>());
 }
 /*
 template <class T> 
@@ -56,16 +55,21 @@ Trie<T>::Trie () {
 /* dtors */
 template <class T>
 Trie<T>::~Trie () {
-	// cout << "Trie dtor" << endl;
+	// cout << ".";
+
+	if (this->xs->empty()) {
+		this->xs.reset();
+		return;
+	}
+
 	AVLTree<T, Trie<T>*> *xs = this->xs.release();
 	// Iterate through the tries in the avl tree and call delete on them,
 	// otherwise they are pointers and they don't get freed...
-	AVLTree<T, Trie<T>*> *node = nullptr;
 
 	while (!xs->empty()) {
-		node = avl_release_max (&xs);
-		delete *(node->value());
-		delete node;
+		Trie<T>* subtrie = nullptr;
+		tie (ignore, subtrie) = avl_release_max (&xs);
+		delete subtrie;
 	}
 	delete xs;
 }
@@ -74,6 +78,7 @@ Trie<T>::~Trie () {
 template <class T>
 bool Trie<T>::empty() {
 	return !this->present && this->xs->empty();
+	// TODO: or, if all sub-tries are empty too...
 }
 
 /* value */
@@ -86,19 +91,23 @@ T *Trie<T>::value() {
 template <class T>
 int Trie<T>::size () {
 	// Here I need to iterate through xs... and call size recursively.
+	// TODO: Find a nicer way of iterating without moving so much memory 
+	// around
 	int children_size = 0;
 	
 	// create a copy of xs' pointers avl tree...
 	AVLTree<T, Trie<T>*> *t   = this->xs.release();
 	AVLTree<T, Trie<T>*> *xs  = new AVLEmpty<T,Trie<T>*>();
-	AVLTree<T, Trie<T>*> *max = nullptr;
+	T key;
+	Trie<T>* val;
 	
 	while (!t->empty()) {
-		max = avl_release_max (&t);
-		avl_insert (&xs, *(max->key()), *(max->value()));
-		children_size += (*(max->value()))->size();
-		delete max;
+		tie (key, val) = avl_release_max (&t);
+		avl_insert (&xs, key, val);
+		children_size += val->size();
+		// delete max;
 	}
+	delete t;
 
 	this->xs.reset(xs);
 
@@ -111,6 +120,8 @@ int Trie<T>::size () {
 template <class T>
 void Trie<T>::remove (const T xs[], int nx) {
 
+	if (nx < 0) return;
+
 	Trie<T>::steps++;
 
 	if (nx == 0) {
@@ -121,11 +132,8 @@ void Trie<T>::remove (const T xs[], int nx) {
 	T x = xs[0];
 	AVLTree<T, Trie<T>*> *avl_node = nullptr;
 	avl_node = this->xs->find (x);
-	if (avl_node->empty()) {
-		return; // Trying to remove a value that isn't there does nothing
-	}
-
-	assert (nx > 0);
+	// Trying to remove a value that isn't there does nothing:
+	if (avl_node->empty()) return; 
 
 	xs ++;
 	nx --;
@@ -154,9 +162,8 @@ void Trie<T>::insert (const T xs[], int nx) {
 	AVLTree<T, Trie<T>*> *avl_node = nullptr;
 	avl_node = this->xs->find (x);
 	if (avl_node->empty()) {
-		Trie<T> *new_trie = new Trie(x);
 		AVLTree<T, Trie<T>*> *xs = this->xs.release();
-		avl_insert (&xs, x, new_trie);
+		avl_insert (&xs, x, new Trie(x));
 		this->xs.reset (xs);
 		avl_node = this->xs->find (x);
 	}
