@@ -20,8 +20,8 @@ class AVLTree {
 		virtual AVLTree<K,V> *remove        (K x) = 0;
 		virtual AVLTree<K,V> *insert        (K x, V val) = 0;
 		virtual int          height         () = 0;
-		virtual K            *key           () = 0;
-		virtual V            *value         () = 0;
+		virtual K            key            () = 0;
+		virtual V            value          () = 0;
 		virtual bool         empty          () = 0;
 		virtual AVLTree<K,V> *left          () = 0;
 		virtual AVLTree<K,V> *right         () = 0;
@@ -58,8 +58,8 @@ class AVLNode: public AVLTree<K, V> {
 		AVLTree<K, V> *remove     (K x);
 		AVLTree<K, V> *insert     (K x, V val);
 		int        height         ();
-		K          *key           ();
-		V          *value         ();
+		K          key            ();
+		V          value          ();
 		bool       empty          ();
 		AVLTree<K, V> *left       ();
 		AVLTree<K, V> *right      ();
@@ -93,8 +93,8 @@ class AVLEmpty: public AVLTree<K, V> {
 		AVLTree<K, V> *remove     (K x);
 		AVLTree<K, V> *insert     (K x, V val);
 		int        height         ();
-		K          *key           ();
-		V          *value         ();
+		K          key            ();
+		V          value          ();
 		bool       empty          ();
 		AVLTree<K, V> *left       ();
 		AVLTree<K, V> *right      ();
@@ -199,7 +199,7 @@ AVLTree<K, V> *AVLNode<K, V>::rotate_left() {
 	assert (!r->left()->empty());
 
 	assert (newthis == r->left());
-	assert (*(newthis->key()) == *(this->key()));
+	assert (newthis->key() == this->key());
 
 	assert (this->lt->empty());
 	assert (this->rt->empty());
@@ -304,8 +304,8 @@ string AVLNode<K, V>::pp() {
 	assert(this->rt);
 	return "(Node " 
 		+ this->lt->pp() + ", " 
-		+ *(this->key()) + "="
-		+ boost::lexical_cast<std::string>(*(this->value())) + ", "
+		+ this->key() + "="
+		+ boost::lexical_cast<std::string>(this->value()) + ", "
 		+ this->rt->pp() + ")";
 }
 template <class K, class V>
@@ -328,21 +328,21 @@ int AVLEmpty<K, V>::size() {
 
 /* value */
 template <class K, class V>
-V *AVLNode<K, V>::value() {
-	return &(this->val);
+V AVLNode<K, V>::value() {
+	return this->val;
 }
 template <class K, class V>
-V *AVLEmpty<K, V>::value() {
+V AVLEmpty<K, V>::value() {
 	assert(false);
 	throw "error";
 }
 /* key */
 template <class K, class V>
-K *AVLNode<K, V>::key() {
-	return &(this->x);
+K AVLNode<K, V>::key() {
+	return this->x;
 }
 template <class K, class V>
-K *AVLEmpty<K, V>::key() {
+K AVLEmpty<K, V>::key() {
 	assert(false);
 	throw "error";
 }
@@ -402,9 +402,9 @@ AVLTree<K, V> *AVLNode<K, V>::remove(K x) {
 			// Then, release my own children and give them to lmax
 			
 			assert (kmax < this->x);
-			assert (this->x < *(this->right()->key()));
+			assert (this->x < this->right()->key());
 			assert (this->left()->empty() 
-			       || kmax > *(this->left()->key()));
+			       || kmax > this->left()->key());
 
 			return new AVLNode(this->release_left(), 
 			  this->release_right(), kmax, vmax);
@@ -456,8 +456,8 @@ tuple<AVLTree<K, V>*, K, V> AVLNode<K, V>::release_max() {
 	(*(AVLTree<K, V>::p_steps))++;
 	if (this->right()->empty()) {
 		// delete this->rt.release();
-		return make_tuple (this->release_left(), *(this->key()), 
-		  *(this->value()));
+		return make_tuple (this->release_left(), this->key(), 
+		  this->value());
 	}
 
 	AVLTree<K, V> *replacement;
