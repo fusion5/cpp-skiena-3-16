@@ -137,6 +137,7 @@ AVLEmpty<K, V>::~AVLEmpty() { }
  * it's de-allocated... */
 template <class K, class V>
 AVLTree<K, V> *AVLNode<K, V>::rotate_right() {
+	(*(AVLTree<K, V>::p_steps))++;
 	/*
 	   this          l 
 	   / \          / \
@@ -174,6 +175,7 @@ AVLTree<K, V> *AVLNode<K, V>::rotate_right() {
 
 template <class K, class V>
 AVLTree<K, V> *AVLNode<K, V>::rotate_left() {
+	(*(AVLTree<K, V>::p_steps))++;
 	// cout << this->x << " rotate right" << endl;
 	// Rotate by creating a copy...
 	/*
@@ -316,7 +318,7 @@ template <class K, class V>
 int AVLNode<K, V>::size() {
 	assert(this->lt);
 	assert(this->rt);
-	(*(AVLTree<K, V>::p_steps))++;
+	// (*(AVLTree<K, V>::p_steps))++;
 	return 1 + this->lt->size() + this->rt->size();
 }
 template <class K, class V>

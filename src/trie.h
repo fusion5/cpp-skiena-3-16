@@ -2,7 +2,7 @@
 #define SKIENA_3_16_TRIE
 
 #include <boost/lexical_cast.hpp>
-#include "balanced_avl_tree.h"
+#include "bin_tree.h"
 
 template <class T>
 class Trie {
@@ -23,7 +23,7 @@ class Trie {
 		bool    present;
 		T       x;
 	private:
-		unique_ptr <AVLTree<T, Trie<T>*> > xs;
+		unique_ptr <BinTree<T, Trie<T>*> > xs;
 		int n;
 };
 
@@ -35,21 +35,13 @@ template <class T>
 Trie<T>::Trie (T x) {
 	this->x = x;
 	this->present = false;
-	this->xs = unique_ptr<AVLTree<T, Trie<T>*> >(new AVLEmpty<T, Trie<T>*>());
+	this->xs = unique_ptr<BinTree<T, Trie<T>*> >(new BinEmpty<T, Trie<T>*>());
 }
-/*
-template <class T> 
-Trie<T>::Trie (const Trie<T>& t) {
-	// We need to initialize ourselves to be a copy of t...
-	this->x  = t.x;
-	this->xs = unique_ptr<AVLTree<T, Trie<T>*> >(t.copy_subtrees());
-}
-*/
 template <class T>
 Trie<T>::Trie () {
 	this->present = false;
-	this->xs = unique_ptr<AVLTree<T, Trie<T>*> >(
-	  new AVLEmpty<T, Trie<T>*>());
+	this->xs = unique_ptr<BinTree<T, Trie<T>*> >(
+	  new BinEmpty<T, Trie<T>*>());
 }
 
 /* dtors */
@@ -62,13 +54,13 @@ Trie<T>::~Trie () {
 		return;
 	}
 
-	AVLTree<T, Trie<T>*> *xs = this->xs.release();
+	BinTree<T, Trie<T>*> *xs = this->xs.release();
 	// Iterate through the tries in the avl tree and call delete on them,
 	// otherwise they are pointers and they don't get freed...
 
 	while (!xs->empty()) {
 		Trie<T>* subtrie = nullptr;
-		tie (ignore, subtrie) = avl_release_max (&xs);
+		tie (ignore, subtrie) = bintree_release_max(&xs);
 		delete subtrie;
 	}
 	delete xs;
@@ -96,14 +88,14 @@ int Trie<T>::size () {
 	int children_size = 0;
 	
 	// create a copy of xs' pointers avl tree...
-	AVLTree<T, Trie<T>*> *t   = this->xs.release();
-	AVLTree<T, Trie<T>*> *xs  = new AVLEmpty<T,Trie<T>*>();
+	BinTree<T, Trie<T>*> *t   = this->xs.release();
+	BinTree<T, Trie<T>*> *xs  = new BinEmpty<T,Trie<T>*>();
 	T key;
 	Trie<T>* val;
 	
 	while (!t->empty()) {
-		tie (key, val) = avl_release_max (&t);
-		avl_insert (&xs, key, val);
+		tie (key, val) = bintree_release_max (&t);
+		bintree_insert (&xs, key, val);
 		children_size += val->size();
 		// delete max;
 	}
@@ -130,18 +122,18 @@ void Trie<T>::remove (const T xs[], int nx) {
 	}
 
 	T x = xs[0];
-	AVLTree<T, Trie<T>*> *avl_node = nullptr;
-	avl_node = this->xs->find (x);
+	BinTree<T, Trie<T>*> *bin_node = nullptr;
+	bin_node = this->xs->find (x);
 	// Trying to remove a value that isn't there does nothing:
-	if (avl_node->empty()) return; 
+	if (bin_node->empty()) return; 
 
 	xs ++;
 	nx --;
-	(*(avl_node->value()))->remove (xs, nx);
-	if ((*(avl_node->value()))->empty()) {
+	(bin_node->value())->remove (xs, nx);
+	if ((bin_node->value())->empty()) {
 		// Delete the sub-trie if it's no longer present
-		AVLTree<T, Trie<T>*> *xs = this->xs.release();
-		avl_remove (&xs, *(avl_node->key()));
+		BinTree<T, Trie<T>*> *xs = this->xs.release();
+		bintree_remove (&xs, bin_node->key());
 		this->xs.reset(xs);
 	}
 }
@@ -159,13 +151,13 @@ void Trie<T>::insert (const T xs[], int nx) {
 
 	T x = xs[0];
 
-	AVLTree<T, Trie<T>*> *avl_node = nullptr;
-	avl_node = this->xs->find (x);
-	if (avl_node->empty()) {
-		AVLTree<T, Trie<T>*> *xs = this->xs.release();
-		avl_insert (&xs, x, new Trie(x));
+	BinTree<T, Trie<T>*> *bin_node = nullptr;
+	bin_node = this->xs->find (x);
+	if (bin_node->empty()) {
+		BinTree<T, Trie<T>*> *xs = this->xs.release();
+		bintree_insert (&xs, x, new Trie(x));
 		this->xs.reset (xs);
-		avl_node = this->xs->find (x);
+		bin_node = this->xs->find (x);
 	}
 
 	assert (nx > 0);
@@ -173,7 +165,7 @@ void Trie<T>::insert (const T xs[], int nx) {
 	// Advance the pointer to the next element
 	xs ++; 
 	nx --;
-	(*(avl_node->value()))->insert (xs, nx);
+	(bin_node->value())->insert (xs, nx);
 }
 
 template <class T>
@@ -188,15 +180,15 @@ Trie<T> *Trie<T>::find (const T xs[], int nx) {
 
 	T x = xs[0];
 	
-	AVLTree<T, Trie<T>*> *avl_node = nullptr;
-	avl_node = this->xs->find (x);
+	BinTree<T, Trie<T>*> *bin_node = nullptr;
+	bin_node = this->xs->find (x);
 
 	// Not found...
-	if (avl_node->empty()) return nullptr;
+	if (bin_node->empty()) return nullptr;
 
 	xs ++;
 	nx --;
-	return (*(avl_node->value()))->find (xs, nx);
+	return bin_node->value()->find (xs, nx);
 }
 
 /* pp - pretty printing */
@@ -213,11 +205,11 @@ string Trie<T>::pp () {
 
 /* avl tree type specialization of pretty printing of char Tries */
 template <>
-string AVLNode<char, Trie<char>* >::pp () {
+string BinNode<char, Trie<char>* >::pp () {
 	return "(Node "
 		+ this->lt->pp() + ", "
-		+ *(this->key()) + "="
-		+ (*(this->value()))->pp() + ", "
+		+ this->key() + "="
+		+ this->value()->pp() + ", "
 		+ this->rt->pp() + ")";
 }
 #endif

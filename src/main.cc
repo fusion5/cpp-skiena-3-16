@@ -65,8 +65,8 @@ int main()
 	List<string>           *l = new Empty<string>();
 	List<string>           *m = nullptr;
 
-	BinTree<string>        *b = new BinEmpty<string>();
-	BinTree<string>        *node = nullptr;
+	BinTree<string, bool>  *b = new BinEmpty<string, bool>();
+	BinTree<string, bool>  *node = nullptr;
 
 	Balanced23Tree<string> *bal_23_tree = new BalancedEmpty<string>();
 	Balanced23Tree<string> *bal_23_node = nullptr;
@@ -85,7 +85,7 @@ int main()
 
 	assert (l->empty());
 
-	while (f->good() /* && (i < 5500)*/) {
+	while (f->good() && (i < 1000000)) {
 		
 		*f >> word;
 		boost::algorithm::to_lower(word);
@@ -130,16 +130,15 @@ int main()
 			node = b->find(word);
 			if (node->empty()) {
 				// cout << "insert " << word << endl;
-				bintree_insert (&b, word);
+				bintree_insert (&b, word, true);
 			} else {
-				// cout << "remove " << word << endl;
 				bintree_remove (&b, word);
 			}
 
 			if (clear(i)) {
 				cout << "Clearing bintree..." << endl;
 				// delete b;
-				// b = new BinEmpty<string>();
+				// b = new BinEmpty<string, bool>();
 				while (!b->empty())
 					bintree_release_max (&b);
 			}
@@ -158,11 +157,9 @@ int main()
 				cout << "Clearing 2-3 tree..." << endl;
 				// delete bal_23_tree;
 				// bal_23_tree = new BalancedEmpty<string>();
-				while (!bal_23_tree->empty()) {
-					balanced_23_tree_release_max (&bal_23_tree);
-					// balanced_23_tree_remove(
-					//  &bal_23_tree, *(bal_23_tree->max()));
-				}
+				while (!bal_23_tree->empty())
+					balanced_23_tree_release_max (
+					  &bal_23_tree);
 			}
 		#endif
 
@@ -187,9 +184,11 @@ int main()
 		#endif
 
 		#ifdef TEST_TRIE
-			// Benchmark avl steps as trie steps because
+			// Benchmark these steps as trie steps because
 			// the trie uses the avl tree...
 			AVLTree<char, Trie<char>*>::p_steps = 
+			  &(Trie<char>::steps);
+			BinTree<char, Trie<char>*>::p_steps = 
 			  &(Trie<char>::steps);
 
 			const char* xs;
@@ -212,12 +211,6 @@ int main()
 				delete trie;
 				trie = new Trie<char>();
 			}
-
-			// delete xs;
-			/*
-			AVLTree<char, Trie<char>*>::p_steps = 
-			  &(AVLTree<char, Trie<char>*>::steps);
-			*/
 		#endif
 
 		i++;
@@ -233,7 +226,7 @@ int main()
 	// Report...
 	cout << "*** Number of Steps" << endl;
 	cout << "List: " << List<string>::steps << endl;
-	cout << "BinTree: " << BinTree<string>::steps << endl;
+	cout << "BinTree: " << BinTree<string, bool>::steps << endl;
 	cout << "Balanced 2-3 Tree: " 
 	     << Balanced23Tree<string>::steps << endl;
 	cout << "AVL Tree: " << AVLTree<string, bool>::steps << endl;
