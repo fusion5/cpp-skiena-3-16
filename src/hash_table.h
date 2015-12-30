@@ -8,31 +8,31 @@
 #define MAX_KEY_LEN 50
 
 /*
- * Our hash table has a key type K and a value type V.
- * The key must have a hash function from K to int...
+ * Our hash table has a key type string and a value type V.
+ * The key must have a hash function from string to int...
  * */
-template <class K, class V>
+template <class V>
 class HashTable {
 	public:
-		HashTable<K, V>  (unsigned int size);
-		~HashTable<K, V> ();
-		List<K>          *find   (K k);
-		void             insert (K k, V v);
-		void             remove (K k);
+		HashTable<V>  (unsigned int size);
+		~HashTable<V> ();
+		List<string>     *find  (string k);
+		void             insert (string k, V v);
+		void             remove (string k);
 		bool             empty  ();
 		int              size   ();
-		K                max    ();
+		string           max    ();
 		string           pp     ();
 		static int steps;
 	private:
-		unsigned int     hash   (K k, int *counter);
-		List<K>          **xs;      // Array of pointers to list objects
+		unsigned int     hash   (string k, int *counter);
+		List<string>     **xs;      // Array of pointers to list objects
 		int              *mod_pows; // Modulo power cache table
 		unsigned int n;             // Hash size
 };
 
-template <class K, class V>
-int HashTable<K, V>::steps = 0;
+template <class V>
+int HashTable<V>::steps = 0;
 
 int char_to_int (char c) {
 	switch (c) {
@@ -76,33 +76,32 @@ int modular_pow (unsigned int base, unsigned int exponent, unsigned int modulus,
 }
 
 /* ctors */
-template <class K, class V>
-HashTable<K, V>::HashTable (unsigned int size) {
+template <class V>
+HashTable<V>::HashTable (unsigned int size) {
 	this->n  = size;
-	this->xs = new List<K>*[size];
+	this->xs = new List<string>*[size];
 	this->mod_pows = new int[MAX_KEY_LEN];
 
 	for (int i = 0; i < MAX_KEY_LEN; i++)
 		this->mod_pows[i] = modular_pow (char_to_int('z'), i, this->n, 
-		  &HashTable<K, V>::steps);
+		  &HashTable<V>::steps);
 
-	// List<K> *it = *(this->xs);
 	for (int i = 0; i < size; i++) {
 		// Initialize all lists with an empty list...
-		this->xs[i] = new Empty<K>();
+		this->xs[i] = new Empty<string>();
 	}
 }
 
 /* dtors */
-template <class K, class V>
-HashTable<K, V>::~HashTable () {
+template <class V>
+HashTable<V>::~HashTable () {
 	for (int i = 0; i < this->n; i++)
 		delete this->xs[i];
 	delete this->xs[this->n];
 }
 
 template <>
-unsigned int HashTable<string, bool>::hash (string s, int *counter) {
+unsigned int HashTable<bool>::hash (string s, int *counter) {
 
 	assert (s.size() < MAX_KEY_LEN);
 
@@ -138,25 +137,32 @@ unsigned int HashTable<string, bool>::hash (string s, int *counter) {
 	return n;
 }
 
-template <class K, class V>
-void HashTable<K, V>::insert (K k, V v) {
-	int hash = this->hash (k, &HashTable<K, V>::steps);
+template <class V>
+void HashTable<V>::insert (string k, V v) {
+	int hash = this->hash (k, &HashTable<V>::steps);
 	assert (hash >= 0);
 	assert (hash < this->n);
 	this->xs[hash] = this->xs[hash]->insert(k);
 }
 
-template <class K, class V>
-List<K> *HashTable<K, V>::find (K k) {
+template <class V>
+List<string> *HashTable<V>::find (string k) {
 	// TODO: Make it return the value...
-	int hash = this->hash (k, &HashTable<K, V>::steps);
+	int hash = this->hash (k, &HashTable<V>::steps);
 	return this->xs[hash]->find (k);
 }
 
-template <class K, class V>
-void HashTable<K, V>::remove (K k) {
-	int hash = this->hash (k, &HashTable<K, V>::steps);
+template <class V>
+void HashTable<V>::remove (string k) {
+	int hash = this->hash (k, &HashTable<V>::steps);
 	list_remove (&(this->xs[hash]), k);
 }
 
+template <class V>
+int HashTable<V>::size() {
+	int r = 0;
+	for (int i = 0; i < this->n; i++)
+		r += this->xs[i]->size();
+	return r;
+}
 #endif

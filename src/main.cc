@@ -34,7 +34,7 @@
 // #define TEST_LIST
 // #define TEST_BIN
 // #define TEST_23
-// #define TEST_AVL
+#define TEST_AVL
 // #define TEST_TRIE
 #define TEST_HASH
 
@@ -79,7 +79,7 @@ int main()
 	Trie<char>             *trie      = new Trie<char>();
 	Trie<char>             *trie_node = nullptr;
 
-	HashTable<string, bool> *h        = new HashTable<string, bool> (HSIZE);
+	HashTable<bool> *h                = new HashTable<bool> (HSIZE);
 	// The hash table uses lists internally to handle duplicate hash 
 	// situations
 	List<string> *hash_list_item      = nullptr;
@@ -91,7 +91,7 @@ int main()
 
 	assert (l->empty());
 
-	while (f->good() && (i < 10000)) {
+	while (f->good() && (i < 1000000)) {
 		
 		*f >> word;
 		boost::algorithm::to_lower(word);
@@ -232,7 +232,7 @@ int main()
 			if (clear(i)) {
 				cout << "Clearing Hash table..." << endl;
 				delete h;
-				h = new HashTable<string, bool> (HSIZE);
+				h = new HashTable<bool> (HSIZE);
 			}
 		#endif
 		i++;
@@ -253,7 +253,7 @@ int main()
 	     << Balanced23Tree<string>::steps << endl;
 	cout << "AVL Tree: " << AVLTree<string, bool>::steps << endl;
 	cout << "Trie: " << Trie<char>::steps << endl;
-	cout << "Hash: " << HashTable<string, bool>::steps << endl;
+	cout << "Hash: " << HashTable<bool>::steps << endl;
 	
 	cout << "*** Total words: " << i << endl;
 	cout << "*** Sizes" << endl;
@@ -269,6 +269,7 @@ int main()
 	cout << avl_tree->size()
 	     << ", height " << avl_tree->height() << endl;
 	cout << "Trie size: " << trie->size() << endl;
+	cout << "Hash size: " << h->size() << endl;
 
 	// Cleanup
 	if (l)           delete l;
@@ -277,6 +278,7 @@ int main()
 	if (bal_23_tree) delete bal_23_tree;
 	if (avl_tree)    delete avl_tree;
 	if (trie)        delete trie;
+	if (h)           delete h;
 
 	f->close();
 	delete f;
