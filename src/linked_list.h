@@ -40,7 +40,7 @@ class Cons: public List<T> {
 		Cons<T>  (T x, List<T> *xs);
 		Cons<T>  (T x);
 		~Cons<T> ();
-		List<T> *find (T x);
+		List<T> *find   (T x);
 		List<T> *insert (T x);
 		List<T> *remove (T x);
 		List<T> *release_xs ();

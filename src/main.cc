@@ -29,15 +29,17 @@
 #include "balanced_23_tree.h"
 #include "balanced_avl_tree.h"
 #include "trie.h"
+#include "hash_table.h"
 
 // #define TEST_LIST
-#define TEST_BIN
-#define TEST_23
-#define TEST_AVL
-#define TEST_TRIE
+// #define TEST_BIN
+// #define TEST_23
+// #define TEST_AVL
+// #define TEST_TRIE
+#define TEST_HASH
 
 #define CLEAR_INTERVAL 5000
-
+#define HSIZE 140009
 using namespace std;
 
 int not_isalnum (int x) {
@@ -62,21 +64,25 @@ int main()
 
 	string word;
 
-	List<string>           *l = new Empty<string>();
-	List<string>           *m = nullptr;
+	List<string>           *l    = new Empty<string>();
+	List<string>           *m    = nullptr;
 
-	BinTree<string, bool>  *b = new BinEmpty<string, bool>();
+	BinTree<string, bool>  *b    = new BinEmpty<string, bool>();
 	BinTree<string, bool>  *node = nullptr;
 
 	Balanced23Tree<string> *bal_23_tree = new BalancedEmpty<string>();
 	Balanced23Tree<string> *bal_23_node = nullptr;
 
-	AVLTree<string, bool>  *avl_tree    = new AVLEmpty<string, bool>();
-	AVLTree<string, bool>  *avl_node    = nullptr;
+	AVLTree<string, bool>  *avl_tree  = new AVLEmpty<string, bool>();
+	AVLTree<string, bool>  *avl_node  = nullptr;
 
-	Trie<char>             *trie        = new Trie<char>();
-	Trie<char>             *trie_node   = nullptr;
+	Trie<char>             *trie      = new Trie<char>();
+	Trie<char>             *trie_node = nullptr;
 
+	HashTable<string, bool> *h        = new HashTable<string, bool> (HSIZE);
+	// The hash table uses lists internally to handle duplicate hash 
+	// situations
+	List<string> *hash_list_item      = nullptr;
 
 	set<string> *std_set = new set<string>();
 	set<string>::iterator it;
@@ -85,7 +91,7 @@ int main()
 
 	assert (l->empty());
 
-	while (f->good() && (i < 1000000)) {
+	while (f->good() && (i < 10000)) {
 		
 		*f >> word;
 		boost::algorithm::to_lower(word);
@@ -212,7 +218,23 @@ int main()
 				trie = new Trie<char>();
 			}
 		#endif
+		
+		#ifdef TEST_HASH
+			// cout << word << endl;
+			hash_list_item = h->find(word);
+			
+			assert (hash_list_item->empty() == empty);
+			if (hash_list_item->empty())
+				h->insert(word, true);
+			else
+				h->remove(word);
 
+			if (clear(i)) {
+				cout << "Clearing Hash table..." << endl;
+				delete h;
+				h = new HashTable<string, bool> (HSIZE);
+			}
+		#endif
 		i++;
 	}
 
@@ -231,6 +253,7 @@ int main()
 	     << Balanced23Tree<string>::steps << endl;
 	cout << "AVL Tree: " << AVLTree<string, bool>::steps << endl;
 	cout << "Trie: " << Trie<char>::steps << endl;
+	cout << "Hash: " << HashTable<string, bool>::steps << endl;
 	
 	cout << "*** Total words: " << i << endl;
 	cout << "*** Sizes" << endl;
