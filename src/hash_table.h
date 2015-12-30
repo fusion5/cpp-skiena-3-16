@@ -10,6 +10,7 @@
 /*
  * Our hash table has a key type string and a value type V.
  * The key must have a hash function from string to int...
+ * TODO: Actually store values V because now it's just a set...
  * */
 template <class V>
 class HashTable {
@@ -97,7 +98,8 @@ template <class V>
 HashTable<V>::~HashTable () {
 	for (int i = 0; i < this->n; i++)
 		delete this->xs[i];
-	delete this->xs[this->n];
+	delete[] this->xs;
+	delete[] this->mod_pows;
 }
 
 template <>

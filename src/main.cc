@@ -34,7 +34,7 @@
 // #define TEST_LIST
 // #define TEST_BIN
 // #define TEST_23
-#define TEST_AVL
+// #define TEST_AVL
 // #define TEST_TRIE
 #define TEST_HASH
 
@@ -54,8 +54,6 @@ bool clear (int i) {
 int main()
 {
 	// To implement also: 
-	// - A trie         [x]
-	// - A hash table   []
 	// - Red-black tree []
 	
 	ifstream *f;
@@ -91,7 +89,7 @@ int main()
 
 	assert (l->empty());
 
-	while (f->good() && (i < 1000000)) {
+	while (f->good() && (i < 1000)) {
 		
 		*f >> word;
 		boost::algorithm::to_lower(word);
