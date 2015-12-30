@@ -5,6 +5,8 @@
 #include <iostream>
 #include <cmath>
 
+#define MAX_KEY_LEN 50
+
 /*
  * Our hash table has a key type K and a value type V.
  * The key must have a hash function from K to int...
@@ -24,32 +26,31 @@ class HashTable {
 		static int steps;
 	private:
 		unsigned int     hash   (K k, int *counter);
-		List<K>          **xs; // Array of pointers to list objects
-		unsigned int n;
+		List<K>          **xs;      // Array of pointers to list objects
+		int              *mod_pows; // Modulo power cache table
+		unsigned int n;             // Hash size
 };
 
 template <class K, class V>
 int HashTable<K, V>::steps = 0;
 
-/* ctors */
-template <class K, class V>
-HashTable<K, V>::HashTable (unsigned int size) {
-	this->n  = size;
-	this->xs = new List<K>*[size];
-
-	// List<K> *it = *(this->xs);
-	for (int i = 0; i < size; i++) {
-		// Initialize all lists with an empty list...
-		this->xs[i] = new Empty<K>();
+int char_to_int (char c) {
+	switch (c) {
+		case '0': return 0; case '1': return 1; case '2': return 2; 
+		case '3': return 3; case '4': return 4; case '5': return 5;
+		case '6': return 6; case '7': return 7; case '8': return 8;
+		case '9': return 9;
+		case 'a': return 10; case 'b': return 11; case 'c': return 12; 
+		case 'd': return 13; case 'e': return 14; case 'f': return 15;
+		case 'g': return 16; case 'h': return 17; case 'i': return 18;
+		case 'j': return 19; case 'k': return 20; case 'l': return 21;
+		case 'm': return 22; case 'n': return 23; case 'o': return 24;
+		case 'p': return 25; case 'q': return 26; case 'r': return 27;
+		case 's': return 28; case 't': return 29; case 'u': return 30;
+		case 'v': return 31; case 'w': return 32; case 'x': return 33;
+		case 'y': return 34; case 'z': return 35;
 	}
-}
-
-/* dtors */
-template <class K, class V>
-HashTable<K, V>::~HashTable () {
-	for (int i = 0; i < this->n; i++)
-		delete this->xs[i];
-	delete this->xs[this->n];
+	assert (false);
 }
 
 int modular_pow (unsigned int base, unsigned int exponent, unsigned int modulus,
@@ -74,27 +75,36 @@ int modular_pow (unsigned int base, unsigned int exponent, unsigned int modulus,
 	return c;
 }
 
+/* ctors */
+template <class K, class V>
+HashTable<K, V>::HashTable (unsigned int size) {
+	this->n  = size;
+	this->xs = new List<K>*[size];
+	this->mod_pows = new int[MAX_KEY_LEN];
 
-int char_to_int (char c) {
-	switch (c) {
-		case '0': return 0; case '1': return 1; case '2': return 2; 
-		case '3': return 3; case '4': return 4; case '5': return 5;
-		case '6': return 6; case '7': return 7; case '8': return 8;
-		case '9': return 9;
-		case 'a': return 10; case 'b': return 11; case 'c': return 12; 
-		case 'd': return 13; case 'e': return 14; case 'f': return 15;
-		case 'g': return 16; case 'h': return 17; case 'i': return 18;
-		case 'j': return 19; case 'k': return 20; case 'l': return 21;
-		case 'm': return 22; case 'n': return 23; case 'o': return 24;
-		case 'p': return 25; case 'q': return 26; case 'r': return 27;
-		case 's': return 28; case 't': return 29; case 'u': return 30;
-		case 'v': return 31; case 'w': return 32; case 'x': return 33;
-		case 'y': return 34; case 'z': return 35;
+	for (int i = 0; i < MAX_KEY_LEN; i++)
+		this->mod_pows[i] = modular_pow (char_to_int('z'), i, this->n, 
+		  &HashTable<K, V>::steps);
+
+	// List<K> *it = *(this->xs);
+	for (int i = 0; i < size; i++) {
+		// Initialize all lists with an empty list...
+		this->xs[i] = new Empty<K>();
 	}
-	assert (false);
 }
+
+/* dtors */
+template <class K, class V>
+HashTable<K, V>::~HashTable () {
+	for (int i = 0; i < this->n; i++)
+		delete this->xs[i];
+	delete this->xs[this->n];
+}
+
 template <>
 unsigned int HashTable<string, bool>::hash (string s, int *counter) {
+
+	assert (s.size() < MAX_KEY_LEN);
 
 	if (s == "") return 0;
 
@@ -113,23 +123,15 @@ unsigned int HashTable<string, bool>::hash (string s, int *counter) {
 
 	int i                   = 0;
 	unsigned long long n    = 0;
-	unsigned long long oldn = 0;
 
 	while (i < s.size()) {
 		(*counter) ++;
-		n = (n % this->n) +
-			(modular_pow(char_to_int('z'), s.size() - i + 1, this->n
-			, counter) 
-			* char_to_int(s[i])) % this->n;
+		n = n + ( this->mod_pows[s.size() - i + 1] * char_to_int(s[i])) 
+		      % this->n;
 		n = n % this->n;
 		i++;
 	}
 
-	// If a1 == b1 (mod n)
-	//    a2 == b2 (mod n)
-	// Then a1*a2 == b1*b2 (mod n)
-	//
-	// (a mod n)*(b mod n) == (a*b) mod n
 	assert (n <= this->n);
 	assert (n >= 0);
 	
