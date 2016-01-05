@@ -62,8 +62,8 @@ int main()
 
 	string word;
 
-	List<string>           *l    = new Empty<string>();
-	List<string>           *m    = nullptr;
+	List<string, bool>     *l    = new Empty<string, bool>();
+	List<string, bool>     *m    = nullptr;
 
 	BinTree<string, bool>  *b    = new BinEmpty<string, bool>();
 	BinTree<string, bool>  *node = nullptr;
@@ -80,7 +80,7 @@ int main()
 	HashTable<bool> *h                = new HashTable<bool> (HSIZE);
 	// The hash table uses lists internally to handle duplicate hash 
 	// situations
-	List<string> *hash_list_item      = nullptr;
+	List<string, bool> *hash_list_item = nullptr;
 
 	set<string> *std_set = new set<string>();
 	set<string>::iterator it;
@@ -114,7 +114,7 @@ int main()
 
 		#ifdef TEST_LIST
 			m = l->find(word);
-			if (m->empty()) list_insert (&l, word);
+			if (m->empty()) list_insert (&l, word, true);
 			else            list_remove (&l, word);
 
 			if (clear(i)) {
@@ -245,7 +245,7 @@ int main()
 
 	// Report...
 	cout << "*** Number of Steps" << endl;
-	cout << "List: " << List<string>::steps << endl;
+	cout << "List: " << List<string, bool>::steps << endl;
 	cout << "BinTree: " << BinTree<string, bool>::steps << endl;
 	cout << "Balanced 2-3 Tree: " 
 	     << Balanced23Tree<string>::steps << endl;

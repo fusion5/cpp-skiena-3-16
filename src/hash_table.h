@@ -17,7 +17,7 @@ class HashTable {
 	public:
 		HashTable<V>  (unsigned int size);
 		~HashTable<V> ();
-		List<string>     *find  (string k);
+		List<string, V>  *find  (string k);
 		void             insert (string k, V v);
 		void             remove (string k);
 		bool             empty  ();
@@ -27,7 +27,7 @@ class HashTable {
 		static int steps;
 	private:
 		unsigned int     hash   (string k, int *counter);
-		List<string>     **xs;      // Array of pointers to list objects
+		List<string, V>  **xs;      // Array of pointers to list objects
 		int              *mod_pows; // Modulo power cache table
 		unsigned int n;             // Hash size
 };
@@ -80,7 +80,7 @@ int modular_pow (unsigned int base, unsigned int exponent, unsigned int modulus,
 template <class V>
 HashTable<V>::HashTable (unsigned int size) {
 	this->n  = size;
-	this->xs = new List<string>*[size];
+	this->xs = new List<string, V>*[size];
 	this->mod_pows = new int[MAX_KEY_LEN];
 
 	for (int i = 0; i < MAX_KEY_LEN; i++)
@@ -89,7 +89,7 @@ HashTable<V>::HashTable (unsigned int size) {
 
 	for (int i = 0; i < size; i++) {
 		// Initialize all lists with an empty list...
-		this->xs[i] = new Empty<string>();
+		this->xs[i] = new Empty<string, V>();
 	}
 }
 
@@ -115,8 +115,8 @@ unsigned int HashTable<bool>::hash (string s, int *counter) {
 	//     char_to_int(z) ^ (s.size - i + 1) * char_to_int (s[i])
 	// return n % this->n
 	//
-	// But clearly this polynomial will exceed max int so we work with modular 
-	// arithmetic using the operations below...
+	// But clearly this polynomial will exceed max int so we work with 
+	// modular arithmetic using the operations below...
 	//
 	//   (a mod n)   + (b mod n)  = (a + b) mod n...
 	//   (21 mod 24) + (9 mod 24) = 6 mod 24
@@ -144,12 +144,11 @@ void HashTable<V>::insert (string k, V v) {
 	int hash = this->hash (k, &HashTable<V>::steps);
 	assert (hash >= 0);
 	assert (hash < this->n);
-	this->xs[hash] = this->xs[hash]->insert(k);
+	this->xs[hash] = this->xs[hash]->insert(k, v);
 }
 
 template <class V>
-List<string> *HashTable<V>::find (string k) {
-	// TODO: Make it return the value...
+List<string, V> *HashTable<V>::find (string k) {
 	int hash = this->hash (k, &HashTable<V>::steps);
 	return this->xs[hash]->find (k);
 }
