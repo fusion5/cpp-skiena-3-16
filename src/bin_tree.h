@@ -145,10 +145,9 @@ template <class K, class V>
 BinTree<K, V> *BinEmpty<K, V>::release_left() {
 	assert (false);
 }
-/*
- * release_right
- * */
 
+/* release_right
+ * */
 template <class K, class V>
 BinTree<K, V> *BinNode<K, V>::release_right() {
 	assert (this->rt);

@@ -28,6 +28,7 @@
 #include "bin_tree.h"
 #include "balanced_23_tree.h"
 #include "balanced_avl_tree.h"
+#include "balanced_rb_tree.h"
 #include "trie.h"
 #include "hash_table.h"
 
@@ -36,10 +37,12 @@
 // #define TEST_23
 // #define TEST_AVL
 // #define TEST_TRIE
-#define TEST_HASH
+// #define TEST_HASH
+#define TEST_RB
 
 #define CLEAR_INTERVAL 5000
-#define HSIZE 140009
+#define HSIZE 140009 // Hash memory size...
+
 using namespace std;
 
 int not_isalnum (int x) {
@@ -76,6 +79,9 @@ int main()
 
 	Trie<char>             *trie      = new Trie<char>();
 	Trie<char>             *trie_node = nullptr;
+
+	RBTree<string, bool>   *bal_rb_tree = new RBEmpty<string, bool>();
+	RBTree<string, bool>   *bal_rb_node = nullptr;
 
 	HashTable<bool> *h                = new HashTable<bool> (HSIZE);
 	// The hash table uses lists internally to handle duplicate hash 
@@ -233,6 +239,16 @@ int main()
 				h = new HashTable<bool> (HSIZE);
 			}
 		#endif
+
+		#ifdef TEST_RB
+			bal_rb_node = bal_rb_tree->find(word);
+
+			// assert (bal_rb_node->empty() == empty);
+			if (bal_rb_node->empty())
+				rb_insert(&bal_rb_tree, word, true);
+			
+		#endif
+
 		i++;
 	}
 

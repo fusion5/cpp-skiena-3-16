@@ -35,7 +35,8 @@ template <class T>
 Trie<T>::Trie (T x) {
 	this->x = x;
 	this->present = false;
-	this->xs = unique_ptr<BinTree<T, Trie<T>*> >(new BinEmpty<T, Trie<T>*>());
+	this->xs = unique_ptr<BinTree<T, Trie<T>*> >(
+	  new BinEmpty<T, Trie<T>*>());
 }
 template <class T>
 Trie<T>::Trie () {

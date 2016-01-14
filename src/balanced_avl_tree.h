@@ -133,8 +133,8 @@ template <class K, class V>
 AVLEmpty<K, V>::~AVLEmpty() { }
 
 /* Rotate left, right... 
- * These methods leave the object unusable, they should be called only before 
- * it's de-allocated... */
+ * These methods leave the object unusable, after their call we expect the 
+ * object to be de-allocated... */
 template <class K, class V>
 AVLTree<K, V> *AVLNode<K, V>::rotate_right() {
 	(*(AVLTree<K, V>::p_steps))++;
@@ -173,11 +173,10 @@ AVLTree<K, V> *AVLNode<K, V>::rotate_right() {
 	return l;
 }
 
+// Rotate by creating a copy...
 template <class K, class V>
 AVLTree<K, V> *AVLNode<K, V>::rotate_left() {
 	(*(AVLTree<K, V>::p_steps))++;
-	// cout << this->x << " rotate right" << endl;
-	// Rotate by creating a copy...
 	/*
 		this             r
 		/ \             / \
