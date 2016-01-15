@@ -247,6 +247,12 @@ int main()
 			// assert (bal_rb_node->empty() == empty);
 			if (bal_rb_node->empty())
 				rb_insert (&bal_rb_tree, word, true);
+			else
+				rb_release_min (&bal_rb_tree);
+
+			if (clear(i)) {
+				cout << "Clearing RB Tree..." << endl;
+			}
 			
 		#endif
 
