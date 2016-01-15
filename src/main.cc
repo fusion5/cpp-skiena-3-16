@@ -243,9 +243,10 @@ int main()
 		#ifdef TEST_RB
 			bal_rb_node = bal_rb_tree->find(word);
 
+			cout << bal_rb_tree->pp() << endl;
 			// assert (bal_rb_node->empty() == empty);
 			if (bal_rb_node->empty())
-				rb_insert(&bal_rb_tree, word, true);
+				rb_insert (&bal_rb_tree, word, true);
 			
 		#endif
 

@@ -23,7 +23,8 @@ skiena_3_16_SOURCES = \
 	dictionary.h \
 	balanced_avl_tree.h \
 	trie.h \
-	hash_table.h
+	hash_table.h \
+	balanced_rb_tree.h
 
 skiena_3_16_CXXFLAGS = --std=c++11 
 

@@ -16,7 +16,7 @@ class RBTree {
 	public:
 		virtual ~RBTree<K, V>               ()         = 0;
 		virtual RBTree<K, V>  *find         (K k)      = 0;
-		// virtual RBTree<K, V> *remove       (K k)      = 0;
+		// virtual RBTree<K, V> *remove     (K k)      = 0;
 		virtual RBTree<K, V>  *insert       (K k, V v) = 0;
 		virtual bool          empty         ()         = 0;
 		virtual void          replace_left  (RBTree<K, V> *lt) = 0;
@@ -25,7 +25,7 @@ class RBTree {
 		virtual RBTree<K, V>  *release_right () = 0;
 		virtual bool          red            () = 0;
 		virtual void          flip_red       () = 0;
-		// virtual string        pp            () = 0;
+		virtual string        pp             () = 0;
 };
 
 template <class K, class V>
@@ -33,15 +33,16 @@ class RBNode: public RBTree<K, V> {
 	public:
 		RBNode (RBTree<K, V> *lt, RBTree<K, V> *rt, K x, V v);
 		~RBNode ();
-		RBTree<K, V>  *find         (K k);
-		RBTree<K, V>  *insert       (K k, V v);
-		bool          empty         ();
-		void          replace_left  (RBTree<K, V> *lt);
-		void          replace_right (RBTree<K, V> *rt);
+		RBTree<K, V>  *find          (K k);
+		RBTree<K, V>  *insert        (K k, V v);
+		bool          empty          ();
+		void          replace_left   (RBTree<K, V> *lt);
+		void          replace_right  (RBTree<K, V> *rt);
 		RBTree<K, V>  *release_left  ();
 		RBTree<K, V>  *release_right ();
 		bool          red            ();
 		void          flip_red       ();
+		string        pp             ();
 	private:
 		K key;
 		V val;
@@ -58,15 +59,16 @@ class RBEmpty: public RBTree<K, V> {
 	public:
 		RBEmpty  ();
 		~RBEmpty ();
-		RBTree<K, V>  *find         (K k);
-		RBTree<K, V>  *insert       (K k, V v);
-		bool          empty         ();
-		void          replace_left  (RBTree<K, V> *lt);
-		void          replace_right (RBTree<K, V> *rt);
+		RBTree<K, V>  *find          (K k);
+		RBTree<K, V>  *insert        (K k, V v);
+		bool          empty          ();
+		void          replace_left   (RBTree<K, V> *lt);
+		void          replace_right  (RBTree<K, V> *rt);
 		RBTree<K, V>  *release_left  ();
 		RBTree<K, V>  *release_right ();
 		bool          red            ();
 		void          flip_red       ();
+		string        pp             ();
 	private:
 		K key;
 		V val;
@@ -119,7 +121,10 @@ RBTree<K, V> *RBEmpty<K, V>::find(K key) {
 	return this;
 }
 
-/* insert */
+/* insert 
+ * returns nullptr if my parent link should not be changed; a new pointer 
+ * otherwise
+ * */
 template <class K, class V>
 RBTree<K, V>* RBEmpty<K, V>::insert (K k, V v) {
 	return new RBNode<K, V> (new RBEmpty<K, V>(), new RBEmpty<K, V>(), k, v);
@@ -129,17 +134,27 @@ RBTree<K, V>* RBNode<K, V>::insert (K k, V v) {
 	
 	if (this->lt->red() && this->rt->red()) this->flip_colors();
 
-	if (k == this->key) return this;
-	if (k < this->key)
-		this->replace_left(this->lt->insert(k, v));
-	if (k > this->key)
-		this->replace_right(this->rt->insert(k, v));
+	if (k == this->key) return nullptr;
+
+	RBTree<K, V> *res;
+
+	if (k < this->key) {
+		res = this->lt->insert (k, v);
+		if (res) this->replace_left (res);
+	}
+	if (k > this->key) {
+		res = this->rt->insert (k, v);
+		if (res) this->replace_right (res);
+	}
+
+	assert (this->rt);
+	assert (this->lt);
 
 	// Is one of our children passing a red link upwards?
 	if (this->rt->red()  && !this->lt->red()) return this->rotate_left();
 	if (!this->rt->red() && this->lt->red())  return this->rotate_right();
 
-	return this;
+	return nullptr;
 }
 
 /* rotate_left */
@@ -224,7 +239,26 @@ void RBEmpty<K, V>::flip_red() {
 
 template <class K, class V>
 void rb_insert (RBTree<K, V> **t, K key, V val) {
-	*t = (*t)->insert (key, val);
+	RBTree<K, V> *r;
+	r = (*t)->insert (key, val);
+	if (r) {
+		delete *t;
+		*t = r;
+	}
+}
+
+/* pp */
+template <class K, class V>
+string RBNode<K, V>::pp() {
+	return "(Node "
+		+ this->lt->pp() + ", "
+		+ boost::lexical_cast<std::string>(this->key) + "="
+		+ boost::lexical_cast<std::string>(this->val) + ", "
+		+ this->rt->pp() + ")";
+}
+template <class K, class V>
+string RBEmpty<K, V>::pp() {
+	return "<>";
 }
 
 #endif
